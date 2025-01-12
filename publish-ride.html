@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>نشر رحلة | عالواهس</title>
+    
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Noto Kufi Arabic', sans-serif;
+      }
+      
+      body {
+        background-color: #f8f9fa;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .navbar {
+        background: linear-gradient(135deg, #FF8C00, #FFA500);
+        padding: 1.2rem;
+        color: white;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      }
+      
+      .navbar-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .logo {
+        font-size: 2rem;
+        font-weight: 700;
+        color: white;
+        text-decoration: none;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+      }
+      
+      .main-content {
+        flex: 1;
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      
+      .publish-form {
+        background: white;
+        border-radius: 20px;
+        padding: 2.5rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        max-width: 700px;
+        margin: 2rem auto;
+      }
+      
+      .publish-form h2 {
+        text-align: center;
+        color: #2d3436;
+        font-size: 2rem;
+        margin-bottom: 2rem;
+      }
+      
+      .form-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+      
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+      
+      .form-group label {
+        display: block;
+        margin-bottom: 0.8rem;
+        font-weight: 500;
+        color: #2d3436;
+        font-size: 1.1rem;
+      }
+      
+      .form-control {
+        width: 100%;
+        padding: 1rem;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+      }
+      
+      .form-control:focus {
+        outline: none;
+        border-color: #FF8C00;
+        box-shadow: 0 0 0 3px rgba(255,140,0,0.1);
+      }
+      
+      .btn {
+        background: linear-gradient(135deg, #FF8C00, #FFA500);
+        color: white;
+        padding: 1.2rem 2rem;
+        border: none;
+        border-radius: 50px;
+        font-size: 1.2rem;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(255,140,0,0.2);
+      }
+      
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255,140,0,0.3);
+      }
+      
+      .required-mark {
+        color: #FF8C00;
+        margin-right: 4px;
+      }
+      
+      .info-text {
+        color: #636e72;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+      }
+      
+      .upload-preview {
+        width: 100%;
+        height: 200px;
+        border: 2px dashed #e9ecef;
+        border-radius: 12px;
+        margin-top: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #636e72;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+      }
+      
+      .upload-preview:hover {
+        border-color: #FF8C00;
+        background: rgba(255,140,0,0.05);
+      }
+      
+      .success-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+      }
+      
+      .success-content {
+        background: white;
+        margin: 50px auto;
+        padding: 3rem 2rem;
+        border-radius: 20px;
+        max-width: 500px;
+        text-align: center;
+        position: relative;
+        animation: modalSlideIn 0.3s ease;
+      }
+      
+      @keyframes modalSlideIn {
+        from {
+          transform: translateY(-100px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+      
+      .success-icon {
+        width: 80px;
+        height: 80px;
+        background: #4CAF50;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+        margin: 0 auto 2rem;
+      }
+      
+      .success-content h2 {
+        margin-bottom: 1rem;
+        color: #2d3436;
+      }
+      
+      .success-content p {
+        color: #636e72;
+        margin-bottom: 2rem;
+      }
+      
+      .success-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+      }
+      
+      .success-buttons .btn {
+        min-width: 150px;
+      }
+      
+      .view-btn {
+        background: linear-gradient(135deg, #4CAF50, #45a049);
+      }
+      
+      .home-btn {
+        background: linear-gradient(135deg, #2196F3, #1976D2);
+      }
+      
+      .requests-list {
+        margin: 1rem 0;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      .request-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .request-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+      }
+
+      .request-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .detail-item {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .detail-label {
+        font-size: 0.9rem;
+        color: #666;
+      }
+
+      .detail-value {
+        font-weight: 500;
+      }
+
+      .contact-btn {
+        background: linear-gradient(135deg, #25D366, #128C7E);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 0.5rem;
+      }
+
+      .no-requests {
+        text-align: center;
+        padding: 1rem;
+        color: #666;
+      }
+      
+      input[type="date"], input[type="time"] {
+        font-family: 'Noto Kufi Arabic', sans-serif;
+        cursor: pointer;
+      }
+      
+      input[type="date"]::-webkit-calendar-picker-indicator,
+      input[type="time"]::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        padding: 5px;
+        filter: invert(60%);
+      }
+      
+      input[type="date"]::-webkit-calendar-picker-indicator:hover,
+      input[type="time"]::-webkit-calendar-picker-indicator:hover {
+        filter: invert(80%);
+      }
+      
+      @media (max-width: 768px) {
+        .publish-form {
+          padding: 1.5rem;
+        }
+        
+        .form-row {
+          grid-template-columns: 1fr;
+          gap: 0;
+        }
+        
+        .btn {
+          padding: 1rem;
+        }
+      }
+      
+      .image-upload-container {
+        margin: 10px 0;
+      }
+
+      .image-preview {
+        width: 100%;
+        height: 200px;
+        border: 2px dashed #ddd;
+        border-radius: 8px;
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: #f8f9fa;
+        position: relative;
+      }
+
+      .image-preview img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+
+      .upload-placeholder {
+        color: #666;
+        text-align: center;
+        padding: 20px;
+      }
+
+      .image-preview:hover {
+        border-color: #FF8C00;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="navbar-content">
+        <a href="index.html" class="logo">عالواهس</a>
+      </div>
+    </nav>
+    
+    <main class="main-content">
+      <form class="publish-form" onsubmit="publishRide(event)">
+        <h2>نشر رحلة</h2>
+        
+        <div class="form-group">
+          <label>من أين؟</label>
+          <input type="text" id="fromLocation" class="form-control" placeholder="مثال: بغداد - الكرادة" required>
+        </div>
+        
+        <div class="form-group">
+          <label>إلى أين؟</label>
+          <input type="text" id="toLocation" class="form-control" placeholder="مثال: البصرة - العشار" required>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>تاريخ المغادرة</label>
+            <input type="date" id="departureDate" class="form-control" required min="">
+            <small class="form-text">اختر تاريخ الرحلة</small>
+          </div>
+          
+          <div class="form-group">
+            <label>وقت المغادرة</label>
+            <input type="time" id="departureTime" class="form-control" required>
+            <small class="form-text">اختر وقت المغادرة المتوقع</small>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>نوع السيارة</label>
+          <input type="text" id="carType" class="form-control" placeholder="مثال: تويوتا كامري ٢٠٢٣ - أبيض" required>
+        </div>
+        
+        <div class="form-group">
+          <label>عدد المقاعد المتاحة</label>
+          <input type="number" id="availableSeats" class="form-control" min="1" max="7" value="4" required>
+        </div>
+        
+        <div class="form-group">
+          <label>السعر للمقعد الواحد</label>
+          <input type="number" id="pricePerSeat" class="form-control" min="1000" step="1000" value="25000" required>
+        </div>
+        
+        <div class="form-group">
+          <label>صورة السيارة (اختياري)</label>
+          <div class="image-upload-container">
+            <input type="file" id="carImage" class="form-control" accept="image/*" onchange="previewImage(event)">
+            <div id="imagePreview" class="image-preview">
+              <img id="preview" style="display: none;">
+              <div class="upload-placeholder">اختر صورة للسيارة (اختياري)</div>
+            </div>
+          </div>
+          <small class="form-text">يمكنك رفع صورة للسيارة لزيادة الثقة</small>
+        </div>
+        
+        <div class="form-group">
+          <label>رقم الواتساب العراقي</label>
+          <input type="tel" id="phoneNumber" class="form-control" placeholder="مثال: 07801234567" required>
+          <small class="form-text">أدخل رقم الواتساب العراقي الخاص بك. يجب أن يبدأ الرقم بـ 078 أو 077 أو 075</small>
+        </div>
+        
+        <button type="submit" class="btn">نشر الرحلة</button>
+      </form>
+    </main>
+    
+    <!-- Success Modal with Matching Requests -->
+    <div id="successModal" class="success-modal">
+      <div class="success-content">
+        <h2>تم نشر الرحلة بنجاح!</h2>
+        
+        <!-- Matching Requests Section -->
+        <div id="matchingRequests">
+          <h3>طلبات الركاب من نفس نقطة الانطلاق</h3>
+          <div id="requestsList" class="requests-list">
+            <!-- Requests will be loaded here -->
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button onclick="window.location.href='published-rides.html'" class="btn">عرض الرحلات المنشورة</button>
+          <button onclick="document.getElementById('successModal').style.display='none'" class="btn">عودة للصفحة الرئيسية</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Set minimum date to today
+      document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const yyyy = today.getFullYear();
+        
+        const minDate = yyyy + '-' + mm + '-' + dd;
+        document.getElementById('departureDate').min = minDate;
+        
+        // Set default time to next hour
+        const nextHour = new Date(today.setHours(today.getHours() + 1, 0, 0));
+        const hours = String(nextHour.getHours()).padStart(2, '0');
+        const minutes = String(nextHour.getMinutes()).padStart(2, '0');
+        document.getElementById('departureTime').value = `${hours}:${minutes}`;
+      });
+
+      function publishRide(event) {
+        event.preventDefault();
+        
+        // Get form data
+        const fromLocation = document.getElementById('fromLocation').value;
+        const toLocation = document.getElementById('toLocation').value;
+        const departureDate = document.getElementById('departureDate').value;
+        const departureTime = document.getElementById('departureTime').value;
+        const carType = document.getElementById('carType').value;
+        const availableSeats = document.getElementById('availableSeats').value;
+        const pricePerSeat = document.getElementById('pricePerSeat').value;
+        const phoneNumber = document.getElementById('phoneNumber').value;
+        const carImageInput = document.getElementById('carImage');
+
+        // Validate phone number
+        const cleanPhone = phoneNumber.replace(/\D/g, '');
+        if (!cleanPhone.match(/^(078|077|075)\d{8}$/)) {
+          alert('يجب أن يبدأ رقم الواتساب العراقي بـ 078 أو 077 أو 075 ويتكون من 11 رقم');
+          return;
+        }
+        
+        // Combine date and time
+        const dateTime = new Date(departureDate + 'T' + departureTime);
+        
+        // Validate that the selected time is not in the past
+        const now = new Date();
+        if (dateTime < now) {
+          alert('لا يمكن اختيار وقت في الماضي');
+          return;
+        }
+
+        // Function to create and save ride
+        const createAndSaveRide = (carImageBase64 = null) => {
+          // Format time in Arabic
+          const timeString = dateTime.toLocaleTimeString('ar-IQ', {
+            hour: 'numeric',
+            minute: 'numeric',
+            hour12: true
+          });
+          
+          // Format date in Arabic
+          const dateString = dateTime.toLocaleDateString('ar-IQ', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+          
+          // Create ride object
+          const newRide = {
+            id: Date.now(),
+            from: fromLocation,
+            to: toLocation,
+            date: dateString,
+            time: timeString,
+            car: carType,
+            seats: parseInt(availableSeats),
+            price: parseInt(pricePerSeat),
+            driver: 'السائق',
+            phone: cleanPhone,
+            rating: '٥.٠',
+            trips: '١',
+            rawDateTime: dateTime.toISOString(),
+            carImage: carImageBase64
+          };
+          
+          // Store in localStorage
+          const publishedRides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+          publishedRides.push(newRide);
+          localStorage.setItem('publishedRides', JSON.stringify(publishedRides));
+          
+          // Load matching requests and show success modal
+          loadMatchingRequests(fromLocation);
+          document.getElementById('successModal').style.display = 'block';
+        };
+
+        // Handle image if provided
+        if (carImageInput.files && carImageInput.files[0]) {
+          const reader = new FileReader();
+          reader.onload = function() {
+            createAndSaveRide(reader.result);
+          };
+          reader.readAsDataURL(carImageInput.files[0]);
+        } else {
+          // Create ride without image
+          createAndSaveRide();
+        }
+      }
+
+      function previewImage(event) {
+        const file = event.target.files[0];
+        if (file) {
+          // Validate file type
+          if (!file.type.startsWith('image/')) {
+            alert('يرجى اختيار ملف صورة فقط');
+            event.target.value = '';
+            return;
+          }
+
+          // Validate file size (max 5MB)
+          if (file.size > 5 * 1024 * 1024) {
+            alert('حجم الصورة يجب أن لا يتجاوز 5 ميغابايت');
+            event.target.value = '';
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = function() {
+            const preview = document.getElementById('preview');
+            preview.src = reader.result;
+            preview.style.display = 'block';
+            document.querySelector('.upload-placeholder').style.display = 'none';
+          }
+          reader.readAsDataURL(file);
+        }
+      }
+
+      // Click on preview to trigger file input
+      document.addEventListener('DOMContentLoaded', function() {
+        const imagePreview = document.getElementById('imagePreview');
+        const fileInput = document.getElementById('carImage');
+        
+        imagePreview.addEventListener('click', function() {
+          fileInput.click();
+        });
+      });
+
+      function loadMatchingRequests(fromLocation) {
+        const requestsList = document.getElementById('requestsList');
+        const allRequests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
+        
+        // Filter requests with matching starting location
+        const matchingRequests = allRequests.filter(request => 
+          request.from.toLowerCase() === fromLocation.toLowerCase() &&
+          request.status === 'pending'
+        );
+        
+        if (matchingRequests.length === 0) {
+          requestsList.innerHTML = `
+            <div class="no-requests">
+              <p>لا توجد طلبات ركاب من نفس نقطة الانطلاق حالياً</p>
+            </div>
+          `;
+          return;
+        }
+        
+        requestsList.innerHTML = matchingRequests.map(request => `
+          <div class="request-card">
+            <div class="request-header">
+              <div class="route">إلى: ${request.to}</div>
+              <div class="date">${new Date(request.date).toLocaleDateString('ar-IQ')}</div>
+            </div>
+            
+            <div class="request-details">
+              <div class="detail-item">
+                <span class="detail-label">نوع السيارة:</span>
+                <span class="detail-value">${request.carType === 'suv' ? 'دفع رباعي' : 'صالون'}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">الحجز:</span>
+                <span class="detail-value">${request.fullCar ? 'سيارة كاملة' : request.seats + ' مقاعد'}</span>
+              </div>
+            </div>
+
+            <button class="contact-btn" onclick="contactRider('${request.phone}', '${request.from}', '${request.to}', '${request.date}')">
+              تواصل مع الراكب
+            </button>
+          </div>
+        `).join('');
+      }
+
+      function contactRider(phone, from, to, date) {
+        const message = encodeURIComponent(`السلام عليكم، أنا سائق وأود التواصل بخصوص طلب رحلة ${from} إلى ${to} بتاريخ ${new Date(date).toLocaleDateString('ar-IQ')}`);
+        
+        // Format phone number for WhatsApp URL
+        let whatsappNumber = phone.replace(/\D/g, '');
+        if (whatsappNumber.startsWith('00')) {
+          whatsappNumber = whatsappNumber.substring(2);
+        }
+        if (whatsappNumber.startsWith('0')) {
+          whatsappNumber = '964' + whatsappNumber.substring(1);
+        }
+        if (!whatsappNumber.startsWith('964')) {
+          whatsappNumber = '964' + whatsappNumber;
+        }
+        
+        const url = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${message}`;
+        window.open(url, '_blank');
+      }
+
+      // Close modal when clicking outside
+      window.onclick = function(event) {
+        const modal = document.getElementById('successModal');
+        if (event.target === modal) {
+          modal.style.display = 'none';
+        }
+      }
+      
+      // Add input validation for phone number
+      document.getElementById('phoneNumber').addEventListener('input', function(e) {
+        const input = e.target;
+        let value = input.value.replace(/\D/g, ''); // Remove non-digits
+        
+        if (value.length > 11) {
+          value = value.slice(0, 11);
+        }
+        
+        // Format as user types
+        if (value.length >= 3) {
+          const prefix = value.slice(0, 3);
+          if (!['078', '077', '075'].includes(prefix)) {
+            input.setCustomValidity('يجب أن يبدأ الرقم بـ 078 أو 077 أو 075');
+          } else {
+            input.setCustomValidity('');
+          }
+        }
+        
+        input.value = value;
+      });
+    </script>
+  </body>
+</html>

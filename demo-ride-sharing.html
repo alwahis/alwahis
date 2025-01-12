@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>الوحيس | خدمة التوصيل بين المدن في العراق</title>
+    
+    <!-- Google Fonts - Cairo for Arabic -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Cairo', sans-serif;
+      }
+      
+      body {
+        background-color: #f5f5f5;
+      }
+      
+      .navbar {
+        background-color: #FF8C00;
+        padding: 1rem;
+        color: white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      
+      .navbar-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .logo {
+        font-size: 1.5rem;
+        font-weight: bold;
+      }
+      
+      .nav-links a {
+        color: white;
+        text-decoration: none;
+        margin-right: 1.5rem;
+        font-weight: 500;
+      }
+      
+      .main-content {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      
+      .card {
+        background: white;
+        border-radius: 8px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+      
+      .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+      }
+      
+      .form-control {
+        width: 100%;
+        padding: 0.8rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+      }
+      
+      .btn {
+        background-color: #FF8C00;
+        color: white;
+        padding: 0.8rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+      }
+      
+      .btn:hover {
+        background-color: #CC7000;
+      }
+      
+      .ride-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+      }
+      
+      .ride-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      
+      .ride-card h3 {
+        color: #333;
+        margin-bottom: 1rem;
+      }
+      
+      .ride-details {
+        margin-bottom: 1rem;
+      }
+      
+      .ride-details p {
+        margin-bottom: 0.5rem;
+        color: #666;
+      }
+      
+      .price {
+        font-size: 1.2rem;
+        color: #FF8C00;
+        font-weight: bold;
+        margin: 1rem 0;
+      }
+      
+      .whatsapp-btn {
+        background-color: #25D366;
+        width: 100%;
+        text-align: center;
+      }
+      
+      .whatsapp-btn:hover {
+        background-color: #128C7E;
+      }
+      
+      @media (max-width: 768px) {
+        .nav-links {
+          display: none;
+        }
+        
+        .ride-list {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navbar -->
+    <nav class="navbar">
+      <div class="navbar-content">
+        <div class="logo">الوحيس</div>
+        <div class="nav-links">
+          <a href="#search">ابحث عن رحلة</a>
+          <a href="#create">أنشئ رحلة</a>
+          <a href="#requests">طلبات الركاب</a>
+        </div>
+      </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Search Section -->
+      <section id="search" class="card">
+        <h2>ابحث عن رحلة</h2>
+        <form>
+          <div class="form-group">
+            <label>مدينة المغادرة</label>
+            <input type="text" class="form-control" placeholder="مثال: بغداد">
+          </div>
+          <div class="form-group">
+            <label>مدينة الوصول</label>
+            <input type="text" class="form-control" placeholder="مثال: البصرة">
+          </div>
+          <div class="form-group">
+            <label>تاريخ السفر</label>
+            <input type="date" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>عدد المقاعد</label>
+            <input type="number" class="form-control" min="1" value="1">
+          </div>
+          <button type="submit" class="btn">ابحث</button>
+        </form>
+      </section>
+      
+      <!-- Available Rides -->
+      <div class="ride-list">
+        <!-- Ride Card 1 -->
+        <div class="ride-card">
+          <h3>بغداد ↔ البصرة</h3>
+          <div class="ride-details">
+            <p>التاريخ: ١٥ يناير ٢٠٢٥</p>
+            <p>الوقت: ٩:٠٠ صباحاً</p>
+            <p>نوع السيارة: دفع رباعي</p>
+            <p>المقاعد المتاحة: ٣</p>
+          </div>
+          <div class="price">
+            ٢٥,٠٠٠ دينار عراقي / مقعد
+          </div>
+          <button class="btn whatsapp-btn">تواصل عبر واتساب</button>
+        </div>
+        
+        <!-- Ride Card 2 -->
+        <div class="ride-card">
+          <h3>بغداد ↔ أربيل</h3>
+          <div class="ride-details">
+            <p>التاريخ: ١٦ يناير ٢٠٢٥</p>
+            <p>الوقت: ١٠:٣٠ صباحاً</p>
+            <p>نوع السيارة: صالون</p>
+            <p>المقاعد المتاحة: ٢</p>
+          </div>
+          <div class="price">
+            ٣٠,٠٠٠ دينار عراقي / مقعد
+          </div>
+          <button class="btn whatsapp-btn">تواصل عبر واتساب</button>
+        </div>
+      </div>
+      
+      <!-- Create Ride Section -->
+      <section id="create" class="card">
+        <h2>إنشاء رحلة جديدة</h2>
+        <form>
+          <div class="form-group">
+            <label>مدينة المغادرة</label>
+            <input type="text" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>مدينة الوصول</label>
+            <input type="text" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>تاريخ ووقت المغادرة</label>
+            <input type="datetime-local" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>نوع السيارة</label>
+            <select class="form-control" required>
+              <option value="suv">دفع رباعي</option>
+              <option value="sedan">صالون</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>عدد المقاعد المتاحة</label>
+            <input type="number" class="form-control" min="1" required>
+          </div>
+          <div class="form-group">
+            <label>السعر لكل مقعد (دينار عراقي)</label>
+            <input type="number" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>صورة السيارة</label>
+            <input type="file" class="form-control" accept="image/*" required>
+          </div>
+          <button type="submit" class="btn">نشر الرحلة</button>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>
