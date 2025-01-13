@@ -79,6 +79,22 @@
         text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
       }
       
+      .nav-links {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .nav-links a {
+        color: white;
+        text-decoration: none;
+        margin-left: 1rem;
+      }
+      
+      .nav-links a.active {
+        font-weight: 700;
+      }
+      
       .main-content {
         flex: 1;
         max-width: 1200px;
@@ -187,6 +203,12 @@
     <nav class="navbar">
       <div class="navbar-content">
         <div class="logo">عالواهس</div>
+        <div class="nav-links">
+          <a href="index.html" class="active">الرئيسية</a>
+          <a href="publish-ride.html">نشر رحلة</a>
+          <a href="my-rides.html">رحلاتي</a>
+          <a href="chat.html">الدعم الفني</a>
+        </div>
       </div>
     </nav>
     
