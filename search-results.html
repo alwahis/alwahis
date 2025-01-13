@@ -366,6 +366,10 @@
           <input type="number" id="requestedSeats" class="form-control" min="1" max="4" value="1" required>
         </div>
         <div class="form-group">
+          <label>تاريخ السفر</label>
+          <input type="date" id="travelDate" class="form-control" required>
+        </div>
+        <div class="form-group">
           <label>رقم الواتساب العراقي</label>
           <input type="tel" id="riderPhone" class="form-control" pattern="^(078|077|075)[0-9]{8}$" placeholder="مثال: 07801234567" required>
           <small class="form-text">يجب أن يبدأ الرقم بـ 078 أو 077 أو 075</small>
@@ -501,23 +505,21 @@
     function showSuggestRideModal() {
       // Get search parameters from URL
       const params = new URLSearchParams(window.location.search);
-      const from = params.get('from');
-      const to = params.get('to');
       const date = params.get('date');
       
-      // Store in modal's dataset for later use
-      const modal = document.getElementById('suggestRideModal');
-      modal.dataset.from = from;
-      modal.dataset.to = to;
-      modal.dataset.date = date;
-      
-      // Reset form and show seats input by default
+      // Reset form
       const form = document.getElementById('suggestRideForm');
       form.reset();
+      
+      // Set default values
       document.getElementById('seatsInputGroup').style.display = 'block';
       document.getElementById('requestedSeats').value = '1';
+      if (date) {
+        document.getElementById('travelDate').value = date;
+      }
       
-      modal.style.display = 'block';
+      // Show modal
+      document.getElementById('suggestRideModal').style.display = 'block';
     }
 
     function closeSuggestModal() {
@@ -527,43 +529,38 @@
 
     function submitSuggestedRide(event) {
       event.preventDefault();
-      
-      const modal = document.getElementById('suggestRideModal');
-      const fromLocation = modal.dataset.from;
-      const toLocation = modal.dataset.to;
-      const travelDate = modal.dataset.date;
-      const fullCar = document.querySelector('input[name="fullCar"]:checked').value;
-      const seats = fullCar === 'yes' ? 'full' : document.getElementById('requestedSeats').value;
+
+      // Get form values
+      const fullCar = document.querySelector('input[name="fullCar"]:checked').value === 'yes';
+      const seats = fullCar ? 4 : parseInt(document.getElementById('requestedSeats').value);
       const phone = document.getElementById('riderPhone').value;
+      const date = document.getElementById('travelDate').value;
 
-      // Validate phone number
-      const phonePattern = /^(078|077|075)\d{8}$/;
-      if (!phonePattern.test(phone)) {
-        alert('يجب أن يبدأ رقم الواتساب العراقي بـ 078 أو 077 أو 075 ويتكون من 11 رقم');
-        return;
-      }
+      // Get search parameters from URL
+      const params = new URLSearchParams(window.location.search);
+      const from = params.get('from');
+      const to = params.get('to');
 
-      // Create ride request object
-      const rideRequest = {
-        id: Date.now(),
-        from: fromLocation,
-        to: toLocation,
-        date: travelDate,
-        fullCar: fullCar === 'yes',
-        seats: seats,
-        phone: phone,
-        status: 'pending',
-        createdAt: new Date().toISOString()
+      // Create request object
+      const request = {
+        id: Date.now().toString(),
+        from,
+        to,
+        date,
+        phone,
+        fullCar,
+        seats,
+        status: 'pending'
       };
 
-      // Store in localStorage
-      const rideRequests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
-      rideRequests.push(rideRequest);
-      localStorage.setItem('rideRequests', JSON.stringify(rideRequests));
+      // Save to localStorage
+      const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
+      requests.push(request);
+      localStorage.setItem('rideRequests', JSON.stringify(requests));
 
       // Close modal and show success message
       closeSuggestModal();
-      alert('تم تسجيل طلبك بنجاح! سيتم إعلامك عندما يتوفر سائق للرحلة المطلوبة.');
+      alert('تم إرسال طلبك بنجاح! سيتواصل معك السائق قريباً.');
     }
 
     // Close modal when clicking outside
