@@ -266,6 +266,7 @@
     .radio-option input[type="radio"] {
       position: absolute;
       opacity: 0;
+      cursor: pointer;
     }
 
     .radio-option span {
@@ -350,14 +351,14 @@
         <div class="form-group">
           <label>هل تريد حجز السيارة كاملة؟</label>
           <div class="booking-type-options">
-            <div class="radio-option">
-              <input type="radio" name="fullCar" value="yes" onclick="toggleSeatsInput(this)" required>
+            <label class="radio-option">
+              <input type="radio" name="fullCar" value="yes" required>
               <span>نعم</span>
-            </div>
-            <div class="radio-option">
-              <input type="radio" name="fullCar" value="no" onclick="toggleSeatsInput(this)" required>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="fullCar" value="no" required>
               <span>لا</span>
-            </div>
+            </label>
           </div>
         </div>
         <div id="seatsInputGroup" class="form-group" style="display: block;">
@@ -476,20 +477,23 @@
       window.open(`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${message}`, '_blank');
     }
 
-    function toggleSeatsInput(radio) {
-      const seatsGroup = document.getElementById('seatsInputGroup');
-      const seatsInput = document.getElementById('requestedSeats');
-      
-      if (radio.value === 'yes') {
-        seatsGroup.style.display = 'none';
-        seatsInput.removeAttribute('required');
-        seatsInput.value = '';
-      } else {
-        seatsGroup.style.display = 'block';
-        seatsInput.setAttribute('required', 'required');
-        seatsInput.value = '1';
-      }
-    }
+    // Add event listener for radio buttons
+    document.querySelectorAll('input[name="fullCar"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        const seatsGroup = document.getElementById('seatsInputGroup');
+        const seatsInput = document.getElementById('requestedSeats');
+        
+        if (this.value === 'yes') {
+          seatsGroup.style.display = 'none';
+          seatsInput.removeAttribute('required');
+          seatsInput.value = '';
+        } else {
+          seatsGroup.style.display = 'block';
+          seatsInput.setAttribute('required', 'required');
+          seatsInput.value = '1';
+        }
+      });
+    });
 
     function showSuggestRideModal() {
       // Get search parameters from URL
