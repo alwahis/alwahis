@@ -193,6 +193,114 @@
       justify-content: center;
     }
 
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+
+    .modal-content {
+      background-color: #fff;
+      margin: 5% auto;
+      padding: 2rem;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 600px;
+      position: relative;
+    }
+
+    .close-modal {
+      position: absolute;
+      left: 1rem;
+      top: 1rem;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #666;
+    }
+
+    .close-modal:hover {
+      color: #000;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #2d3436;
+      font-weight: 500;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.8rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    .form-text {
+      font-size: 0.875rem;
+      color: #666;
+      margin-top: 0.25rem;
+    }
+
+    .booking-type-options {
+      display: flex;
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .radio-option {
+      flex: 1;
+      position: relative;
+    }
+
+    .radio-option input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+    }
+
+    .radio-option span {
+      display: block;
+      padding: 0.8rem;
+      text-align: center;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .radio-option input[type="radio"]:checked + span {
+      background: #FF8C00;
+      color: white;
+      border-color: #FF8C00;
+    }
+
+    .confirm-btn {
+      width: 100%;
+      padding: 1rem;
+      background: linear-gradient(135deg, #FF8C00, #FFA500);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .confirm-btn:hover {
+      transform: translateY(-2px);
+    }
+
     @media (max-width: 768px) {
       .summary-details {
         flex-direction: column;
@@ -234,6 +342,38 @@
     <div id="searchResults"></div>
   </div>
 
+  <div id="suggestRideModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeSuggestModal()">&times;</span>
+      <h2>اقترح رحلة</h2>
+      <form id="suggestRideForm" onsubmit="submitSuggestedRide(event)">
+        <div class="form-group">
+          <label for="fullCar">هل تريد حجز السيارة كاملة؟</label>
+          <div class="booking-type-options">
+            <div class="radio-option">
+              <input type="radio" id="yes" name="fullCar" value="yes" onchange="toggleSeatsInput()" required>
+              <span>نعم</span>
+            </div>
+            <div class="radio-option">
+              <input type="radio" id="no" name="fullCar" value="no" onchange="toggleSeatsInput()" required>
+              <span>لا</span>
+            </div>
+          </div>
+        </div>
+        <div id="seatsInputGroup" class="form-group">
+          <label for="requestedSeats">عدد المقاعد المطلوبة:</label>
+          <input type="number" id="requestedSeats" name="requestedSeats" min="1" max="4" required>
+        </div>
+        <div class="form-group">
+          <label for="riderPhone">رقم هاتفك:</label>
+          <input type="tel" id="riderPhone" name="riderPhone" required placeholder="مثال: 07801234567">
+          <small class="form-text">يجب أن يبدأ الرقم بـ 078 أو 077 أو 075</small>
+        </div>
+        <button type="submit" class="confirm-btn">إرسال الطلب</button>
+      </form>
+    </div>
+  </div>
+
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       // Get search parameters from URL
@@ -271,9 +411,9 @@
         resultsContainer.innerHTML = `
           <div class="no-results">
             <h2>لم نجد رحلات مطابقة</h2>
-            <p>لم نجد رحلات تطابق معايير بحثك. يمكنك نشر رحلة جديدة وسيتم إخطار المسافرين المهتمين.</p>
+            <p>لم نجد رحلات تطابق معايير بحثك. يمكنك اقتراح رحلة وسنخبرك عندما تتوفر رحلة مناسبة.</p>
             <div class="no-results-actions">
-              <a href="publish-ride.html" class="suggest-ride-btn">نشر رحلة</a>
+              <button onclick="showSuggestRideModal()" class="suggest-ride-btn">اقترح رحلة</button>
               <a href="search-ride.html" class="back-btn">العودة للبحث</a>
             </div>
           </div>
@@ -334,6 +474,96 @@
       }
       
       window.open(`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${message}`, '_blank');
+    }
+
+    function showSuggestRideModal() {
+      // Get search parameters from URL
+      const params = new URLSearchParams(window.location.search);
+      const from = params.get('from');
+      const to = params.get('to');
+      const date = params.get('date');
+      
+      // Store in modal's dataset for later use
+      const modal = document.getElementById('suggestRideModal');
+      modal.dataset.from = from;
+      modal.dataset.to = to;
+      modal.dataset.date = date;
+      
+      // Reset form
+      document.getElementById('suggestRideForm').reset();
+      document.getElementById('seatsInputGroup').style.display = 'block';
+      
+      modal.style.display = 'block';
+    }
+
+    function closeSuggestModal() {
+      document.getElementById('suggestRideModal').style.display = 'none';
+      // Reset form when closing
+      document.getElementById('suggestRideForm').reset();
+      document.getElementById('seatsInputGroup').style.display = 'block';
+    }
+
+    function toggleSeatsInput() {
+      const fullCarValue = document.querySelector('input[name="fullCar"]:checked').value;
+      const seatsGroup = document.getElementById('seatsInputGroup');
+      const seatsInput = document.getElementById('requestedSeats');
+      
+      if (fullCarValue === 'yes') {
+        seatsGroup.style.display = 'none';
+        seatsInput.removeAttribute('required');
+      } else {
+        seatsGroup.style.display = 'block';
+        seatsInput.setAttribute('required', 'required');
+      }
+    }
+
+    function submitSuggestedRide(event) {
+      event.preventDefault();
+      
+      const modal = document.getElementById('suggestRideModal');
+      const fromLocation = modal.dataset.from;
+      const toLocation = modal.dataset.to;
+      const travelDate = modal.dataset.date;
+      const fullCar = document.querySelector('input[name="fullCar"]:checked').value;
+      const seats = fullCar === 'yes' ? 'full' : document.getElementById('requestedSeats').value;
+      const phone = document.getElementById('riderPhone').value;
+
+      // Validate phone number
+      const cleanPhone = phone.replace(/\D/g, '');
+      if (!cleanPhone.match(/^(078|077|075)\d{8}$/)) {
+        alert('يجب أن يبدأ رقم الواتساب العراقي بـ 078 أو 077 أو 075 ويتكون من 11 رقم');
+        return;
+      }
+
+      // Create ride request object
+      const rideRequest = {
+        id: Date.now(),
+        from: fromLocation,
+        to: toLocation,
+        date: travelDate,
+        fullCar: fullCar === 'yes',
+        seats: seats,
+        phone: cleanPhone,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      };
+
+      // Store in localStorage
+      const rideRequests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
+      rideRequests.push(rideRequest);
+      localStorage.setItem('rideRequests', JSON.stringify(rideRequests));
+
+      // Close modal and show success message
+      closeSuggestModal();
+      alert('تم تسجيل طلبك بنجاح! سيتم إعلامك عندما يتوفر سائق للرحلة المطلوبة.');
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+      const modal = document.getElementById('suggestRideModal');
+      if (event.target === modal) {
+        closeSuggestModal();
+      }
     }
   </script>
 </body>
