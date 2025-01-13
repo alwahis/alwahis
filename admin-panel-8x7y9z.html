@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم | عالواهس</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Noto Kufi Arabic', sans-serif;
+    }
+
+    body {
+      background-color: #f8f9fa;
+      min-height: 100vh;
+    }
+
+    .login-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    .login-form {
+      background: white;
+      padding: 2rem;
+      border-radius: 15px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .admin-container {
+      display: none;
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .header {
+      background: #2d3436;
+      color: white;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .stat-card h3 {
+      color: #636e72;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .stat-card .value {
+      color: #2d3436;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .rides-table {
+      width: 100%;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      overflow: hidden;
+    }
+
+    .rides-table table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .rides-table th,
+    .rides-table td {
+      padding: 1rem;
+      text-align: right;
+      border-bottom: 1px solid #f1f2f6;
+    }
+
+    .rides-table th {
+      background: #f8f9fa;
+      font-weight: 500;
+      color: #2d3436;
+    }
+
+    .rides-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .delete-btn {
+      background: #ff4757;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .delete-btn:hover {
+      background: #ff6b81;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #2d3436;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.8rem;
+      border: 1px solid #dfe6e9;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 1rem;
+      border: none;
+      border-radius: 8px;
+      background: #FF8C00;
+      color: white;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: #FFA500;
+    }
+
+    .status {
+      padding: 0.3rem 0.8rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+
+    .status-active {
+      background: #e3fcef;
+      color: #00b894;
+    }
+
+    .status-cancelled {
+      background: #ffe3e3;
+      color: #ff4757;
+    }
+
+    .logout-btn {
+      background: #636e72;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .logout-btn:hover {
+      background: #2d3436;
+    }
+
+    .search-box {
+      padding: 1rem;
+      background: white;
+      border-radius: 10px;
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 1rem;
+    }
+
+    .search-box input {
+      flex: 1;
+      padding: 0.8rem;
+      border: 1px solid #dfe6e9;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .rides-table {
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Login Form -->
+  <div id="loginContainer" class="login-container">
+    <form id="loginForm" class="login-form" onsubmit="login(event)">
+      <div class="form-group">
+        <label>كلمة المرور</label>
+        <input type="password" id="password" class="form-control" required>
+      </div>
+      <button type="submit" class="btn">دخول</button>
+    </form>
+  </div>
+
+  <!-- Admin Panel -->
+  <div id="adminContainer" class="admin-container">
+    <div class="header">
+      <h1>لوحة التحكم</h1>
+      <button class="logout-btn" onclick="logout()">تسجيل خروج</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <h3>عدد الرحلات النشطة</h3>
+        <div id="activeRidesCount" class="value">0</div>
+      </div>
+      <div class="stat-card">
+        <h3>عدد الرحلات الملغية</h3>
+        <div id="cancelledRidesCount" class="value">0</div>
+      </div>
+      <div class="stat-card">
+        <h3>عدد طلبات الركاب</h3>
+        <div id="requestsCount" class="value">0</div>
+      </div>
+    </div>
+
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="ابحث عن رقم هاتف أو مدينة..." oninput="filterRides()">
+    </div>
+
+    <div class="rides-table">
+      <table>
+        <thead>
+          <tr>
+            <th>التاريخ</th>
+            <th>من</th>
+            <th>إلى</th>
+            <th>السائق</th>
+            <th>السعر</th>
+            <th>المقاعد</th>
+            <th>الحالة</th>
+            <th>إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="ridesTableBody">
+          <!-- Rides will be loaded here -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // The actual password hash (using SHA-256)
+    const ADMIN_PASSWORD_HASH = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'; // This is the hash of 'password'
+
+    // Check if already logged in
+    document.addEventListener('DOMContentLoaded', function() {
+      const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
+      if (isLoggedIn) {
+        showAdminPanel();
+      }
+    });
+
+    async function login(event) {
+      event.preventDefault();
+      
+      const password = document.getElementById('password').value;
+      const hash = await sha256(password);
+      
+      if (hash === ADMIN_PASSWORD_HASH) {
+        localStorage.setItem('adminLoggedIn', 'true');
+        showAdminPanel();
+      } else {
+        alert('كلمة المرور غير صحيحة');
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('adminLoggedIn');
+      document.getElementById('loginContainer').style.display = 'flex';
+      document.getElementById('adminContainer').style.display = 'none';
+    }
+
+    function showAdminPanel() {
+      document.getElementById('loginContainer').style.display = 'none';
+      document.getElementById('adminContainer').style.display = 'block';
+      loadRides();
+      updateStats();
+    }
+
+    function loadRides() {
+      const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+      const tableBody = document.getElementById('ridesTableBody');
+      
+      // Sort rides by date (newest first)
+      rides.sort((a, b) => new Date(b.rawDateTime) - new Date(a.rawDateTime));
+      
+      tableBody.innerHTML = rides.map(ride => `
+        <tr>
+          <td>${formatDate(ride.date)} ${ride.time}</td>
+          <td>${ride.from}</td>
+          <td>${ride.to}</td>
+          <td>${ride.phone}</td>
+          <td>${ride.price} د.ع</td>
+          <td>${ride.seats}</td>
+          <td>
+            <span class="status ${ride.cancelled ? 'status-cancelled' : 'status-active'}">
+              ${ride.cancelled ? 'ملغية' : 'نشطة'}
+            </span>
+          </td>
+          <td>
+            <button class="delete-btn" onclick="deleteRide('${ride.id}')">
+              حذف
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function updateStats() {
+      const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+      const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
+      
+      const activeRides = rides.filter(ride => !ride.cancelled).length;
+      const cancelledRides = rides.filter(ride => ride.cancelled).length;
+      
+      document.getElementById('activeRidesCount').textContent = activeRides;
+      document.getElementById('cancelledRidesCount').textContent = cancelledRides;
+      document.getElementById('requestsCount').textContent = requests.length;
+    }
+
+    function deleteRide(rideId) {
+      if (!confirm('هل أنت متأكد من حذف هذه الرحلة؟')) {
+        return;
+      }
+
+      const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+      const updatedRides = rides.filter(ride => ride.id !== rideId);
+      localStorage.setItem('publishedRides', JSON.stringify(updatedRides));
+      
+      loadRides();
+      updateStats();
+    }
+
+    function filterRides() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+      const tableBody = document.getElementById('ridesTableBody');
+      
+      const filteredRides = rides.filter(ride => 
+        ride.from.toLowerCase().includes(searchTerm) ||
+        ride.to.toLowerCase().includes(searchTerm) ||
+        ride.phone.includes(searchTerm)
+      );
+      
+      tableBody.innerHTML = filteredRides.map(ride => `
+        <tr>
+          <td>${formatDate(ride.date)} ${ride.time}</td>
+          <td>${ride.from}</td>
+          <td>${ride.to}</td>
+          <td>${ride.phone}</td>
+          <td>${ride.price} د.ع</td>
+          <td>${ride.seats}</td>
+          <td>
+            <span class="status ${ride.cancelled ? 'status-cancelled' : 'status-active'}">
+              ${ride.cancelled ? 'ملغية' : 'نشطة'}
+            </span>
+          </td>
+          <td>
+            <button class="delete-btn" onclick="deleteRide('${ride.id}')">
+              حذف
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function formatDate(dateStr) {
+      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      return new Date(dateStr).toLocaleDateString('ar-IQ', options);
+    }
+
+    // SHA-256 hash function
+    async function sha256(message) {
+      const msgBuffer = new TextEncoder().encode(message);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      return hashHex;
+    }
+  </script>
+</body>
+</html>
