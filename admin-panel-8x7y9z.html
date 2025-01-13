@@ -543,6 +543,7 @@
 
     function loadDrivers() {
       const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+      const blockedDrivers = JSON.parse(localStorage.getItem('blockedDrivers') || '[]');
       const drivers = {};
 
       // Group rides by driver
@@ -552,7 +553,8 @@
             phone: ride.phone,
             totalRides: 0,
             activeRides: 0,
-            cancelledRides: 0
+            cancelledRides: 0,
+            isBlocked: blockedDrivers.includes(ride.phone)
           };
         }
         drivers[ride.phone].totalRides++;
@@ -571,8 +573,9 @@
           <td>${driver.activeRides}</td>
           <td>${driver.cancelledRides}</td>
           <td>
-            <button class="block-btn" onclick="toggleBlockDriver('${driver.phone}')">
-              حظر
+            <button class="block-btn ${driver.isBlocked ? 'blocked' : ''}" 
+                    onclick="toggleBlockDriver('${driver.phone}')">
+              ${driver.isBlocked ? 'إلغاء الحظر' : 'حظر'}
             </button>
           </td>
         </tr>

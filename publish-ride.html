@@ -591,7 +591,15 @@
 
       function publishRide(event) {
         event.preventDefault();
-        
+
+        // Check if driver is blocked
+        const phone = document.getElementById('phoneNumber').value;
+        const blockedDrivers = JSON.parse(localStorage.getItem('blockedDrivers') || '[]');
+        if (blockedDrivers.includes(phone)) {
+          alert('عذراً، لا يمكنك نشر رحلات في الوقت الحالي');
+          return;
+        }
+
         // Get form values
         const from = document.getElementById('fromLocation').value;
         const to = document.getElementById('toLocation').value;
