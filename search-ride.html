@@ -533,86 +533,17 @@
         function searchRides(event) {
           event.preventDefault();
           
-          const fromLocation = document.getElementById('fromLocation').value;
-          const toLocation = document.getElementById('toLocation').value;
-          const travelDate = document.getElementById('travelDate').value;
-          const seatsNeeded = parseInt(document.getElementById('seatsNeeded').value);
+          const from = document.getElementById('fromLocation').value;
+          const to = document.getElementById('toLocation').value;
+          const date = document.getElementById('travelDate').value;
           
-          // Format the date in Arabic
-          const date = new Date(travelDate);
-          const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-          const formattedDate = date.toLocaleDateString('ar-IQ', dateOptions);
-          
-          // Get published rides from localStorage
-          const publishedRides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-          
-          // Filter rides based on search criteria
-          const filteredRides = publishedRides.filter(ride => {
-            const matchesRoute = ride.from.includes(fromLocation) && 
-                               ride.to.includes(toLocation);
-            const hasEnoughSeats = ride.seats >= seatsNeeded;
-            return matchesRoute && hasEnoughSeats;
-          });
-          
-          const resultsContainer = document.getElementById('searchResults');
-          const noResultsMessage = document.getElementById('noResults');
-          
-          if (filteredRides.length === 0) {
-            resultsContainer.classList.remove('show');
-            noResultsMessage.style.display = 'block';
+          if (!from || !to || !date) {
+            alert('الرجاء ملء جميع الحقول المطلوبة');
             return;
           }
-          
-          // Show results
-          noResultsMessage.style.display = 'none';
-          resultsContainer.classList.add('show');
-          
-          // Generate HTML for filtered rides
-          const html = `
-            <div class="date-group">
-              <h3 class="date-header">${formattedDate}</h3>
-              ${filteredRides.map(ride => `
-                <div class="ride-card">
-                  <div class="ride-header">
-                    <div class="ride-cities">${ride.from} ↔ ${ride.to}</div>
-                    <div class="ride-price">${ride.price.toLocaleString('ar-IQ')} د.ع</div>
-                  </div>
-                  
-                  <div class="ride-details">
-                    <div class="detail-item">
-                      <strong>وقت المغادرة</strong>
-                      ${ride.time}
-                    </div>
-                    <div class="detail-item">
-                      <strong>نوع السيارة</strong>
-                      ${ride.car}
-                    </div>
-                    <div class="detail-item">
-                      <strong>المقاعد المتاحة</strong>
-                      ${ride.seats} مقاعد
-                    </div>
-                    <div class="detail-item">
-                      <strong>تقييم السائق</strong>
-                      ⭐️ ${ride.rating} (${ride.trips} رحلة)
-                    </div>
-                  </div>
-                  
-                  <button class="btn book-btn" onclick="openBookingModal(this)" 
-                    data-seats="${ride.seats}" 
-                    data-price="${ride.price}" 
-                    data-driver="${ride.driver}"
-                    data-phone="${ride.phone}"
-                    data-route="${ride.from} ↔ ${ride.to}"
-                    data-time="${ride.time}"
-                    data-car="${ride.car}">
-                    احجز مقعد
-                  </button>
-                </div>
-              `).join('')}
-            </div>
-          `;
-          
-          resultsContainer.innerHTML = html;
+
+          // Redirect to search results page with parameters
+          window.location.href = `search-results.html?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&date=${encodeURIComponent(date)}`;
         }
         
         // Set minimum date to today
