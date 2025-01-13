@@ -187,6 +187,33 @@
       color: #ff4757;
     }
 
+    .points-card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .points-value {
+      font-size: 2rem;
+      font-weight: 600;
+      color: #FF8C00;
+      margin-bottom: 0.5rem;
+    }
+
+    .points-label {
+      font-size: 1.2rem;
+      color: #2d3436;
+      margin-right: 0.5rem;
+    }
+
+    .points-info {
+      color: #636e72;
+      font-size: 0.9rem;
+    }
+
     @media (max-width: 768px) {
       .ride-details {
         grid-template-columns: 1fr;
@@ -202,9 +229,16 @@
   </nav>
 
   <div class="container">
-    <div class="page-header">
-      <h1>رحلاتي</h1>
-      <p>إدارة رحلاتك المنشورة</p>
+    <h1>رحلاتي</h1>
+    
+    <div class="points-card">
+      <div class="points-value">
+        <span id="pointsCount">10</span>
+        <span class="points-label">نقطة</span>
+      </div>
+      <div class="points-info">
+        يتم خصم نقطة واحدة عند نشر كل رحلة
+      </div>
     </div>
 
     <div id="ridesList" class="rides-list">
@@ -215,6 +249,7 @@
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       loadMyRides();
+      loadPoints();
     });
 
     function loadMyRides() {
@@ -296,6 +331,15 @@
           <a href="publish-ride.html" class="publish-btn">نشر رحلة جديدة</a>
         </div>
       `;
+    }
+
+    function loadPoints() {
+      const phone = localStorage.getItem('driverPhone');
+      if (!phone) return;
+
+      const driverPoints = JSON.parse(localStorage.getItem('driverPoints') || '{}');
+      const points = driverPoints[phone] || 10;
+      document.getElementById('pointsCount').textContent = points;
     }
 
     function cancelRide(rideId) {

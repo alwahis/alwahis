@@ -272,6 +272,31 @@
       font-size: 0.9rem;
     }
 
+    .points-control {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .points-label {
+      color: #2d3436;
+      font-size: 0.9rem;
+    }
+
+    .points-input {
+      width: 60px;
+      padding: 0.3rem;
+      border: 1px solid #dfe6e9;
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .points-warning {
+      color: #e17055;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+    }
+
     @media (max-width: 768px) {
       .stats {
         grid-template-columns: 1fr;
@@ -404,6 +429,7 @@
               <th>عدد الرحلات</th>
               <th>الرحلات النشطة</th>
               <th>الرحلات الملغية</th>
+              <th>النقاط</th>
               <th>إجراءات</th>
             </tr>
           </thead>
@@ -557,6 +583,7 @@
     function loadDrivers() {
       const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
       const blockedDrivers = JSON.parse(localStorage.getItem('blockedDrivers') || '[]');
+      const driverPoints = JSON.parse(localStorage.getItem('driverPoints') || '{}');
       const drivers = {};
 
       // Group rides by driver
@@ -567,7 +594,8 @@
             totalRides: 0,
             activeRides: 0,
             cancelledRides: 0,
-            isBlocked: blockedDrivers.includes(ride.phone)
+            isBlocked: blockedDrivers.includes(ride.phone),
+            points: driverPoints[ride.phone] || 10
           };
         }
         drivers[ride.phone].totalRides++;
@@ -586,6 +614,13 @@
           <td>${driver.activeRides}</td>
           <td>${driver.cancelledRides}</td>
           <td>
+            <div class="points-control">
+              <span class="points-label">النقاط: </span>
+              <input type="number" class="points-input" value="${driver.points}" 
+                     min="0" max="100" onchange="updatePoints('${driver.phone}', this.value)">
+            </div>
+          </td>
+          <td>
             <span class="${driver.isBlocked ? 'status-blocked' : ''}" style="margin-left: 10px">
               ${driver.isBlocked ? 'محظور' : ''}
             </span>
@@ -596,6 +631,18 @@
           </td>
         </tr>
       `).join('');
+    }
+
+    function updatePoints(phone, points) {
+      points = parseInt(points);
+      if (isNaN(points) || points < 0) points = 0;
+      if (points > 100) points = 100;
+
+      const driverPoints = JSON.parse(localStorage.getItem('driverPoints') || '{}');
+      driverPoints[phone] = points;
+      localStorage.setItem('driverPoints', JSON.stringify(driverPoints));
+      
+      alert(`تم تحديث نقاط السائق إلى ${points} نقطة`);
     }
 
     function deleteRequest(requestId) {

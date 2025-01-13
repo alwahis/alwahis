@@ -602,6 +602,19 @@
           return;
         }
 
+        // Check driver points
+        const driverPoints = JSON.parse(localStorage.getItem('driverPoints') || '{}');
+        const points = driverPoints[phone] || 10; // New drivers get 10 points
+
+        if (points <= 0) {
+          alert('عذراً، لا تملك نقاط كافية لنشر رحلة جديدة. يرجى التواصل مع الإدارة.');
+          return;
+        }
+
+        // Deduct one point
+        driverPoints[phone] = points - 1;
+        localStorage.setItem('driverPoints', JSON.stringify(driverPoints));
+
         const from = document.getElementById('fromLocation').value;
         const to = document.getElementById('toLocation').value;
         const date = document.getElementById('departureDate').value;
