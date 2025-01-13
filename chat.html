@@ -181,9 +181,79 @@
     #fileInput, #imageInput, #audioInput {
       display: none;
     }
+
+    .navbar {
+      background-color: #FF8C00;
+      padding: 1rem 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .navbar-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      color: white;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+    }
+
+    .nav-links a {
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+    }
+
+    .nav-links a:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+    .nav-links a.active {
+      background: rgba(255,255,255,0.2);
+      font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+      .navbar-content {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+      }
+
+      .nav-links {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+    }
   </style>
 </head>
 <body>
+  <nav class="navbar">
+    <div class="navbar-content">
+      <div class="logo">عالواهس</div>
+      <div class="nav-links">
+        <a href="index.html">الرئيسية</a>
+        <a href="publish-ride.html">نشر رحلة</a>
+        <a href="my-rides.html">رحلاتي</a>
+        <a href="chat.html" class="active">الدعم الفني</a>
+      </div>
+    </div>
+  </nav>
+
   <div class="container">
     <div class="chat-container">
       <div class="chat-header">
