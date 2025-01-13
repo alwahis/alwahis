@@ -362,14 +362,14 @@
         </div>
         <div id="seatsInputGroup" class="form-group">
           <label for="requestedSeats">عدد المقاعد المطلوبة:</label>
-          <input type="number" id="requestedSeats" name="requestedSeats" min="1" max="4" required>
+          <input type="number" id="requestedSeats" name="requestedSeats" min="1" max="4" value="1" required>
         </div>
         <div class="form-group">
           <label for="riderPhone">رقم هاتفك:</label>
-          <input type="tel" id="riderPhone" name="riderPhone" required placeholder="مثال: 07801234567">
+          <input type="tel" id="riderPhone" name="riderPhone" required pattern="^(078|077|075)[0-9]{8}$" placeholder="مثال: 07801234567">
           <small class="form-text">يجب أن يبدأ الرقم بـ 078 أو 077 أو 075</small>
         </div>
-        <button type="submit" class="confirm-btn">إرسال الطلب</button>
+        <button type="submit" class="btn confirm-btn">إرسال الطلب</button>
       </form>
     </div>
   </div>
@@ -490,17 +490,20 @@
       modal.dataset.date = date;
       
       // Reset form
-      document.getElementById('suggestRideForm').reset();
-      document.getElementById('seatsInputGroup').style.display = 'block';
+      const form = document.getElementById('suggestRideForm');
+      form.reset();
       
+      // Show seats input by default
+      const seatsGroup = document.getElementById('seatsInputGroup');
+      seatsGroup.style.display = 'block';
+      
+      // Show modal
       modal.style.display = 'block';
     }
 
     function closeSuggestModal() {
-      document.getElementById('suggestRideModal').style.display = 'none';
-      // Reset form when closing
-      document.getElementById('suggestRideForm').reset();
-      document.getElementById('seatsInputGroup').style.display = 'block';
+      const modal = document.getElementById('suggestRideModal');
+      modal.style.display = 'none';
     }
 
     function toggleSeatsInput() {
@@ -511,9 +514,11 @@
       if (fullCarValue === 'yes') {
         seatsGroup.style.display = 'none';
         seatsInput.removeAttribute('required');
+        seatsInput.value = '';
       } else {
         seatsGroup.style.display = 'block';
         seatsInput.setAttribute('required', 'required');
+        seatsInput.value = '1';
       }
     }
 
@@ -529,8 +534,8 @@
       const phone = document.getElementById('riderPhone').value;
 
       // Validate phone number
-      const cleanPhone = phone.replace(/\D/g, '');
-      if (!cleanPhone.match(/^(078|077|075)\d{8}$/)) {
+      const phonePattern = /^(078|077|075)\d{8}$/;
+      if (!phonePattern.test(phone)) {
         alert('يجب أن يبدأ رقم الواتساب العراقي بـ 078 أو 077 أو 075 ويتكون من 11 رقم');
         return;
       }
@@ -543,7 +548,7 @@
         date: travelDate,
         fullCar: fullCar === 'yes',
         seats: seats,
-        phone: cleanPhone,
+        phone: phone,
         status: 'pending',
         createdAt: new Date().toISOString()
       };
