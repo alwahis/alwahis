@@ -511,6 +511,49 @@
       .no-requests p {
         margin-bottom: 1.5rem;
       }
+
+      .footer {
+        background: #f8f9fa;
+        padding: 1rem 0;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        text-align: center;
+        box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+      }
+
+      .footer-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1rem;
+      }
+
+      .support-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #FF8C00;
+        color: white;
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+
+      .support-link:hover {
+        background: #ff9f1a;
+        transform: translateY(-2px);
+      }
+
+      .support-link i {
+        font-size: 1.2rem;
+      }
+
+      .main-content {
+        margin-bottom: 5rem;
+      }
     </style>
   </head>
   <body>
@@ -521,7 +564,6 @@
           <a href="index.html">الرئيسية</a>
           <a href="publish-ride.html" class="active">نشر رحلة</a>
           <a href="my-rides.html">رحلاتي</a>
-          <a href="chat.html">الدعم الفني</a>
         </div>
       </div>
     </nav>
@@ -604,6 +646,15 @@
         </div>
       </div>
     </div>
+
+    <footer class="footer">
+      <div class="footer-content">
+        <a href="chat.html" class="support-link">
+          <i class="fas fa-headset"></i>
+          الدعم الفني
+        </a>
+      </div>
+    </footer>
 
     <script>
       // Set minimum date to today
