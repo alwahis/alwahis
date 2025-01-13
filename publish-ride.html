@@ -49,6 +49,12 @@
         text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
       }
       
+      .nav-link {
+        color: white;
+        text-decoration: none;
+        margin-left: 1rem;
+      }
+      
       .main-content {
         flex: 1;
         max-width: 1200px;
@@ -358,6 +364,7 @@
     <nav class="navbar">
       <div class="navbar-content">
         <a href="index.html" class="logo">عالواهس</a>
+        <a href="my-rides.html" class="nav-link">رحلاتي</a>
       </div>
     </nav>
     
@@ -514,7 +521,7 @@
           
           // Create ride object
           const newRide = {
-            id: Date.now(),
+            id: Date.now().toString(),
             from: fromLocation,
             to: toLocation,
             date: dateString,
@@ -527,13 +534,17 @@
             rating: '٥.٠',
             trips: '١',
             rawDateTime: dateTime.toISOString(),
-            carImage: carImageBase64
+            carImage: carImageBase64,
+            cancelled: false
           };
           
           // Store in localStorage
           const publishedRides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
           publishedRides.push(newRide);
           localStorage.setItem('publishedRides', JSON.stringify(publishedRides));
+          
+          // Store driver's phone
+          localStorage.setItem('driverPhone', cleanPhone);
           
           // Load matching requests and show success modal
           loadMatchingRequests(fromLocation);
@@ -551,6 +562,9 @@
           // Create ride without image
           createAndSaveRide();
         }
+        
+        // Redirect to my-rides page
+        window.location.href = 'my-rides.html';
       }
 
       function previewImage(event) {

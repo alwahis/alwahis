@@ -406,9 +406,12 @@
                rideDate === searchDate;
       });
 
+      // Filter out cancelled rides
+      const activeRides = matchingRides.filter(ride => !ride.cancelled);
+
       const resultsContainer = document.getElementById('searchResults');
       
-      if (matchingRides.length === 0) {
+      if (activeRides.length === 0) {
         resultsContainer.innerHTML = `
           <div class="no-results">
             <h2>لم نجد رحلات مطابقة</h2>
@@ -422,7 +425,7 @@
         return;
       }
 
-      resultsContainer.innerHTML = matchingRides.map(ride => `
+      resultsContainer.innerHTML = activeRides.map(ride => `
         <div class="ride-card">
           <div class="ride-header">
             <div class="route-info">
