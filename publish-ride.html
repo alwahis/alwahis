@@ -161,6 +161,32 @@
         background: rgba(255,140,0,0.05);
       }
       
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+      }
+
+      .modal-content {
+        background: white;
+        margin: 5% auto;
+        padding: 2rem;
+        border-radius: 15px;
+        max-width: 500px;
+        position: relative;
+        text-align: center;
+      }
+
+      .modal h2 {
+        color: #2d3436;
+        margin-bottom: 1.5rem;
+      }
+      
       .success-modal {
         display: none;
         position: fixed;
@@ -531,8 +557,8 @@
       </form>
     </main>
     
-    <!-- Success Modal with Matching Requests -->
-    <div id="successModal" class="success-modal">
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
       <div class="modal-content">
         <h2>تم نشر رحلتك بنجاح!</h2>
         <div id="matchingRequests" class="matching-requests">
@@ -566,98 +592,110 @@
       function publishRide(event) {
         event.preventDefault();
         
-        // Get form data
-        const fromLocation = document.getElementById('fromLocation').value;
-        const toLocation = document.getElementById('toLocation').value;
-        const departureDate = document.getElementById('departureDate').value;
-        const departureTime = document.getElementById('departureTime').value;
-        const carType = document.getElementById('carType').value;
-        const availableSeats = document.getElementById('availableSeats').value;
-        const pricePerSeat = document.getElementById('pricePerSeat').value;
-        const phoneNumber = document.getElementById('phoneNumber').value;
-        const carImageInput = document.getElementById('carImage');
+        // Get form values
+        const from = document.getElementById('fromLocation').value;
+        const to = document.getElementById('toLocation').value;
+        const date = document.getElementById('departureDate').value;
+        const time = document.getElementById('departureTime').value;
+        const phone = document.getElementById('phoneNumber').value;
+        const car = document.getElementById('carType').value;
+        const seats = parseInt(document.getElementById('availableSeats').value);
+        const price = document.getElementById('pricePerSeat').value;
 
-        // Validate phone number
-        const cleanPhone = phoneNumber.replace(/\D/g, '');
-        if (!cleanPhone.match(/^(078|077|075)\d{8}$/)) {
-          alert('يجب أن يبدأ رقم الواتساب العراقي بـ 078 أو 077 أو 075 ويتكون من 11 رقم');
-          return;
-        }
+        // Store driver's phone
+        localStorage.setItem('driverPhone', phone);
         
-        // Combine date and time
-        const dateTime = new Date(departureDate + 'T' + departureTime);
-        
-        // Validate that the selected time is not in the past
-        const now = new Date();
-        if (dateTime < now) {
-          alert('لا يمكن اختيار وقت في الماضي');
-          return;
-        }
-
-        // Function to create and save ride
-        const createAndSaveRide = (carImageBase64 = null) => {
-          // Format time in Arabic
-          const timeString = dateTime.toLocaleTimeString('ar-IQ', {
-            hour: 'numeric',
-            minute: 'numeric',
-            hour12: true
-          });
-          
-          // Format date in Arabic
-          const dateString = dateTime.toLocaleDateString('ar-IQ', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          });
-          
-          // Create ride object
-          const newRide = {
-            id: Date.now().toString(),
-            from: fromLocation,
-            to: toLocation,
-            date: dateString,
-            time: timeString,
-            car: carType,
-            seats: parseInt(availableSeats),
-            price: parseInt(pricePerSeat),
-            driver: 'السائق',
-            phone: cleanPhone,
-            rating: '٥.٠',
-            trips: '١',
-            rawDateTime: dateTime.toISOString(),
-            carImage: carImageBase64,
-            cancelled: false
-          };
-          
-          // Store in localStorage
-          const publishedRides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-          publishedRides.push(newRide);
-          localStorage.setItem('publishedRides', JSON.stringify(publishedRides));
-          
-          // Store driver's phone
-          localStorage.setItem('driverPhone', cleanPhone);
-          
-          // Load matching requests and show success modal
-          loadMatchingRequests(fromLocation, toLocation, dateString);
-          document.getElementById('successModal').style.display = 'block';
+        // Create ride object
+        const ride = {
+          id: Date.now().toString(),
+          from,
+          to,
+          date,
+          time,
+          rawDateTime: new Date(date + 'T' + time).toISOString(),
+          phone,
+          car,
+          seats,
+          price,
+          cancelled: false
         };
 
-        // Handle image if provided
-        if (carImageInput.files && carImageInput.files[0]) {
-          const reader = new FileReader();
-          reader.onload = function() {
-            createAndSaveRide(reader.result);
-          };
-          reader.readAsDataURL(carImageInput.files[0]);
-        } else {
-          // Create ride without image
-          createAndSaveRide();
+        // Save ride
+        const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+        rides.push(ride);
+        localStorage.setItem('publishedRides', JSON.stringify(rides));
+
+        // Show success modal and load matching requests
+        document.getElementById('successModal').style.display = 'block';
+        loadMatchingRequests(from, to, date);
+      }
+
+      function loadMatchingRequests(fromLocation, toLocation, dateString) {
+        const requestsContainer = document.getElementById('matchingRequests');
+        const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
+        
+        // Filter matching requests
+        const matchingRequests = requests.filter(request => 
+          request.from === fromLocation && 
+          request.to === toLocation && 
+          request.date === dateString
+        );
+
+        if (matchingRequests.length === 0) {
+          requestsContainer.innerHTML = `
+            <div class="no-requests">
+              <h3>شكراً لمشاركة رحلتك!</h3>
+              <p>سيتواصل معك المسافرون المتجهون لنفس الوجهة قريباً</p>
+            </div>
+          `;
+          return;
+        }
+
+        requestsContainer.innerHTML = `
+          <h3>المسافرون المهتمون برحلتك:</h3>
+          ${matchingRequests.map(request => `
+            <div class="request-card">
+              <div class="request-info">
+                <div>رقم الهاتف: ${request.phone}</div>
+                ${request.fullCar ? 
+                  '<div class="request-seats">حجز السيارة كاملة</div>' : 
+                  `<div class="request-seats">${request.seats} مقاعد</div>`
+                }
+              </div>
+              <button class="contact-btn" onclick="contactPassenger('${request.phone}')">
+                تواصل عبر واتساب
+              </button>
+            </div>
+          `).join('')}
+        `;
+      }
+
+      function contactPassenger(phone) {
+        // Format the message
+        const message = encodeURIComponent('مرحباً! أنا سائق من تطبيق عالواهس. شاهدت طلب رحلتك.');
+        
+        // Format phone number
+        let whatsappNumber = phone.replace(/\D/g, '');
+        if (whatsappNumber.startsWith('0')) {
+          whatsappNumber = '964' + whatsappNumber.substring(1);
         }
         
-        // Redirect to my-rides page
+        // Open WhatsApp
+        window.open(`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${message}`, '_blank');
+      }
+
+      function closeSuccessModal() {
+        document.getElementById('successModal').style.display = 'none';
         window.location.href = 'my-rides.html';
       }
+
+      // Close modal when clicking outside
+      window.onclick = function(event) {
+        const modal = document.getElementById('successModal');
+        if (event.target === modal) {
+          closeSuccessModal();
+        }
+      };
 
       function previewImage(event) {
         const file = event.target.files[0];
@@ -697,67 +735,6 @@
         });
       });
 
-      function loadMatchingRequests(fromLocation, toLocation, dateString) {
-        const requestsContainer = document.getElementById('matchingRequests');
-        const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
-        
-        // Filter matching requests
-        const matchingRequests = requests.filter(request => {
-          return request.from === fromLocation && 
-                 request.to === toLocation &&
-                 request.date === dateString;
-        });
-
-        if (matchingRequests.length === 0) {
-          requestsContainer.innerHTML = `
-            <div class="no-requests">
-              <h3>شكراً لمشاركة رحلتك!</h3>
-              <p>سيتواصل معك المسافرون المتجهون لنفس الوجهة قريباً</p>
-            </div>
-          `;
-          return;
-        }
-
-        requestsContainer.innerHTML = `
-          <h3>المسافرون المهتمون برحلتك:</h3>
-          ${matchingRequests.map(request => `
-            <div class="request-card">
-              <div class="request-info">
-                <div>رقم الهاتف: ${request.phone}</div>
-                ${request.fullCar ? 
-                  '<div class="request-seats">حجز السيارة كاملة</div>' : 
-                  `<div class="request-seats">${request.seats} مقاعد</div>`
-                }
-              </div>
-              <button class="contact-btn" onclick="contactPassenger('${request.phone}')">
-                تواصل عبر واتساب
-              </button>
-            </div>
-          `).join('')}
-        `;
-      }
-
-      function contactPassenger(phone) {
-        // Format the message
-        const message = encodeURIComponent('مرحباً! أنا سائق من تطبيق عالواهس. شاهدت طلب رحلتك.');
-        
-        // Open WhatsApp
-        window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${message}`, '_blank');
-      }
-
-      function closeSuccessModal() {
-        document.getElementById('successModal').style.display = 'none';
-        window.location.href = 'my-rides.html';
-      }
-
-      // Close modal when clicking outside
-      window.onclick = function(event) {
-        const modal = document.getElementById('successModal');
-        if (event.target === modal) {
-          modal.style.display = 'none';
-        }
-      }
-      
       // Add input validation for phone number
       document.getElementById('phoneNumber').addEventListener('input', function(e) {
         const input = e.target;
