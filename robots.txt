@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://alwahis.netlify.app/sitemap.xml
