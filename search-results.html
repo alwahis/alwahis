@@ -235,7 +235,8 @@
       
       // Filter rides based on search criteria
       const matchingRides = rides.filter(ride => {
-        const rideDate = new Date(ride.date).toDateString();
+        // Use rawDateTime for comparison since it's in ISO format
+        const rideDate = new Date(ride.rawDateTime).toDateString();
         const searchDate = new Date(date).toDateString();
         return ride.from.toLowerCase() === from.toLowerCase() &&
                ride.to.toLowerCase() === to.toLowerCase() &&
@@ -269,11 +270,15 @@
           <div class="ride-details">
             <div class="detail-item">
               <span>التاريخ:</span>
-              <span>${new Date(ride.date).toLocaleDateString('ar-IQ')}</span>
+              <span>${ride.date}</span>
+            </div>
+            <div class="detail-item">
+              <span>الوقت:</span>
+              <span>${ride.time}</span>
             </div>
             <div class="detail-item">
               <span>نوع السيارة:</span>
-              <span>${ride.carType === 'suv' ? 'دفع رباعي' : 'صالون'}</span>
+              <span>${ride.car === 'suv' ? 'دفع رباعي' : 'صالون'}</span>
             </div>
             <div class="detail-item">
               <span>المقاعد المتوفرة:</span>
@@ -281,7 +286,7 @@
             </div>
           </div>
 
-          <button class="contact-btn" onclick="contactDriver('${ride.phone}', '${ride.from}', '${ride.to}', '${ride.date}')">
+          <button class="contact-btn" onclick="contactDriver('${ride.phone}', '${ride.from}', '${ride.to}', '${ride.rawDateTime}')">
             تواصل مع السائق
           </button>
         </div>
