@@ -171,6 +171,28 @@
       transform: translateY(-2px);
     }
 
+    .back-btn {
+      background: #f8f9fa;
+      color: #2d3436;
+      text-decoration: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      display: inline-block;
+      font-weight: 500;
+      transition: transform 0.2s;
+      border: 1px solid #ddd;
+    }
+
+    .back-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .no-results-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+    }
+
     @media (max-width: 768px) {
       .summary-details {
         flex-direction: column;
@@ -250,7 +272,10 @@
           <div class="no-results">
             <h2>لم نجد رحلات مطابقة</h2>
             <p>لم نجد رحلات تطابق معايير بحثك. يمكنك نشر رحلة جديدة وسيتم إخطار المسافرين المهتمين.</p>
-            <a href="publish-ride.html" class="suggest-ride-btn">نشر رحلة</a>
+            <div class="no-results-actions">
+              <a href="publish-ride.html" class="suggest-ride-btn">نشر رحلة</a>
+              <a href="search-ride.html" class="back-btn">العودة للبحث</a>
+            </div>
           </div>
         `;
         return;
