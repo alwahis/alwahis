@@ -358,6 +358,104 @@
         border-color: #FF8C00;
         cursor: pointer;
       }
+
+      #successModal .modal-content {
+        max-width: 500px;
+        background: white;
+        padding: 2rem;
+        border-radius: 15px;
+        text-align: center;
+      }
+
+      .matching-requests {
+        margin-top: 2rem;
+        text-align: right;
+      }
+
+      .request-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .request-info {
+        flex-grow: 1;
+      }
+
+      .request-seats {
+        background: #e3fcef;
+        color: #00b894;
+        padding: 0.3rem 0.8rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+      }
+
+      .contact-btn {
+        background: #FF8C00;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-right: 1rem;
+      }
+
+      .contact-btn:hover {
+        background: #FFA500;
+      }
+
+      .modal-actions {
+        margin-top: 2rem;
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+      }
+
+      .view-rides-btn {
+        background: #FF8C00;
+        color: white;
+        text-decoration: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+      }
+
+      .view-rides-btn:hover {
+        background: #FFA500;
+      }
+
+      .close-modal-btn {
+        background: #f1f2f6;
+        color: #2d3436;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+      }
+
+      .close-modal-btn:hover {
+        background: #dfe4ea;
+      }
+
+      .no-requests {
+        text-align: center;
+        padding: 2rem;
+        color: #636e72;
+      }
+
+      .no-requests h3 {
+        color: #2d3436;
+        margin-bottom: 1rem;
+      }
+
+      .no-requests p {
+        margin-bottom: 1.5rem;
+      }
     </style>
   </head>
   <body>
@@ -435,20 +533,14 @@
     
     <!-- Success Modal with Matching Requests -->
     <div id="successModal" class="success-modal">
-      <div class="success-content">
-        <h2>تم نشر الرحلة بنجاح!</h2>
-        
-        <!-- Matching Requests Section -->
-        <div id="matchingRequests">
-          <h3>طلبات الركاب من نفس نقطة الانطلاق</h3>
-          <div id="requestsList" class="requests-list">
-            <!-- Requests will be loaded here -->
-          </div>
+      <div class="modal-content">
+        <h2>تم نشر رحلتك بنجاح!</h2>
+        <div id="matchingRequests" class="matching-requests">
+          <!-- Matching requests will be loaded here -->
         </div>
-
         <div class="modal-actions">
-          <button onclick="window.location.href='published-rides.html'" class="btn">عرض الرحلات المنشورة</button>
-          <button onclick="document.getElementById('successModal').style.display='none'" class="btn">عودة للصفحة الرئيسية</button>
+          <a href="my-rides.html" class="view-rides-btn">عرض رحلاتي</a>
+          <button class="close-modal-btn" onclick="closeSuccessModal()">إغلاق</button>
         </div>
       </div>
     </div>
@@ -547,7 +639,7 @@
           localStorage.setItem('driverPhone', cleanPhone);
           
           // Load matching requests and show success modal
-          loadMatchingRequests(fromLocation);
+          loadMatchingRequests(fromLocation, toLocation, dateString);
           document.getElementById('successModal').style.display = 'block';
         };
 
@@ -605,67 +697,57 @@
         });
       });
 
-      function loadMatchingRequests(fromLocation) {
-        const requestsList = document.getElementById('requestsList');
-        const allRequests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
+      function loadMatchingRequests(fromLocation, toLocation, dateString) {
+        const requestsContainer = document.getElementById('matchingRequests');
+        const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
         
-        // Filter requests with matching starting location
-        const matchingRequests = allRequests.filter(request => 
-          request.from.toLowerCase() === fromLocation.toLowerCase() &&
-          request.status === 'pending'
-        );
-        
+        // Filter matching requests
+        const matchingRequests = requests.filter(request => {
+          return request.from === fromLocation && 
+                 request.to === toLocation &&
+                 request.date === dateString;
+        });
+
         if (matchingRequests.length === 0) {
-          requestsList.innerHTML = `
+          requestsContainer.innerHTML = `
             <div class="no-requests">
-              <p>لا توجد طلبات ركاب من نفس نقطة الانطلاق حالياً</p>
+              <h3>شكراً لمشاركة رحلتك!</h3>
+              <p>سيتواصل معك المسافرون المتجهون لنفس الوجهة قريباً</p>
             </div>
           `;
           return;
         }
-        
-        requestsList.innerHTML = matchingRequests.map(request => `
-          <div class="request-card">
-            <div class="request-header">
-              <div class="route">إلى: ${request.to}</div>
-              <div class="date">${new Date(request.date).toLocaleDateString('ar-IQ')}</div>
-            </div>
-            
-            <div class="request-details">
-              <div class="detail-item">
-                <span class="detail-label">نوع السيارة:</span>
-                <span class="detail-value">${request.carType === 'suv' ? 'دفع رباعي' : 'صالون'}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">الحجز:</span>
-                <span class="detail-value">${request.fullCar ? 'سيارة كاملة' : request.seats + ' مقاعد'}</span>
-              </div>
-            </div>
 
-            <button class="contact-btn" onclick="contactRider('${request.phone}', '${request.from}', '${request.to}', '${request.date}')">
-              تواصل مع الراكب
-            </button>
-          </div>
-        `).join('');
+        requestsContainer.innerHTML = `
+          <h3>المسافرون المهتمون برحلتك:</h3>
+          ${matchingRequests.map(request => `
+            <div class="request-card">
+              <div class="request-info">
+                <div>رقم الهاتف: ${request.phone}</div>
+                ${request.fullCar ? 
+                  '<div class="request-seats">حجز السيارة كاملة</div>' : 
+                  `<div class="request-seats">${request.seats} مقاعد</div>`
+                }
+              </div>
+              <button class="contact-btn" onclick="contactPassenger('${request.phone}')">
+                تواصل عبر واتساب
+              </button>
+            </div>
+          `).join('')}
+        `;
       }
 
-      function contactRider(phone, from, to, date) {
-        const message = encodeURIComponent(`السلام عليكم، أنا سائق وأود التواصل بخصوص طلب رحلة ${from} إلى ${to} بتاريخ ${new Date(date).toLocaleDateString('ar-IQ')}`);
+      function contactPassenger(phone) {
+        // Format the message
+        const message = encodeURIComponent('مرحباً! أنا سائق من تطبيق عالواهس. شاهدت طلب رحلتك.');
         
-        // Format phone number for WhatsApp URL
-        let whatsappNumber = phone.replace(/\D/g, '');
-        if (whatsappNumber.startsWith('00')) {
-          whatsappNumber = whatsappNumber.substring(2);
-        }
-        if (whatsappNumber.startsWith('0')) {
-          whatsappNumber = '964' + whatsappNumber.substring(1);
-        }
-        if (!whatsappNumber.startsWith('964')) {
-          whatsappNumber = '964' + whatsappNumber;
-        }
-        
-        const url = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${message}`;
-        window.open(url, '_blank');
+        // Open WhatsApp
+        window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${message}`, '_blank');
+      }
+
+      function closeSuccessModal() {
+        document.getElementById('successModal').style.display = 'none';
+        window.location.href = 'my-rides.html';
       }
 
       // Close modal when clicking outside
