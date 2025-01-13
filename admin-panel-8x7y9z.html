@@ -204,6 +204,61 @@
       font-size: 1rem;
     }
 
+    .tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .tab-btn {
+      padding: 0.8rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      background: #f1f2f6;
+      color: #2d3436;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .tab-btn.active {
+      background: #FF8C00;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .filters {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .filters select {
+      padding: 0.8rem;
+      border: 1px solid #dfe6e9;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    .block-btn {
+      background: #e17055;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .block-btn.blocked {
+      background: #636e72;
+    }
+
     @media (max-width: 768px) {
       .stats {
         grid-template-columns: 1fr;
@@ -247,30 +302,103 @@
         <h3>عدد طلبات الركاب</h3>
         <div id="requestsCount" class="value">0</div>
       </div>
+      <div class="stat-card">
+        <h3>عدد السائقين</h3>
+        <div id="driversCount" class="value">0</div>
+      </div>
     </div>
 
-    <div class="search-box">
-      <input type="text" id="searchInput" placeholder="ابحث عن رقم هاتف أو مدينة..." oninput="filterRides()">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('rides')">الرحلات</button>
+      <button class="tab-btn" onclick="showTab('requests')">طلبات الركاب</button>
+      <button class="tab-btn" onclick="showTab('drivers')">السائقين</button>
     </div>
 
-    <div class="rides-table">
-      <table>
-        <thead>
-          <tr>
-            <th>التاريخ</th>
-            <th>من</th>
-            <th>إلى</th>
-            <th>السائق</th>
-            <th>السعر</th>
-            <th>المقاعد</th>
-            <th>الحالة</th>
-            <th>إجراءات</th>
-          </tr>
-        </thead>
-        <tbody id="ridesTableBody">
-          <!-- Rides will be loaded here -->
-        </tbody>
-      </table>
+    <div id="ridesTab" class="tab-content active">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="ابحث عن رقم هاتف أو مدينة..." oninput="filterRides()">
+        <div class="filters">
+          <select id="statusFilter" onchange="filterRides()">
+            <option value="all">كل الحالات</option>
+            <option value="active">نشطة</option>
+            <option value="cancelled">ملغية</option>
+          </select>
+          <select id="dateFilter" onchange="filterRides()">
+            <option value="all">كل التواريخ</option>
+            <option value="today">اليوم</option>
+            <option value="tomorrow">غداً</option>
+            <option value="week">هذا الأسبوع</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="rides-table">
+        <table>
+          <thead>
+            <tr>
+              <th>التاريخ</th>
+              <th>من</th>
+              <th>إلى</th>
+              <th>السائق</th>
+              <th>السعر</th>
+              <th>المقاعد</th>
+              <th>الحالة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="ridesTableBody">
+            <!-- Rides will be loaded here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="requestsTab" class="tab-content">
+      <div class="search-box">
+        <input type="text" id="requestSearchInput" placeholder="ابحث في طلبات الركاب..." oninput="filterRequests()">
+      </div>
+
+      <div class="rides-table">
+        <table>
+          <thead>
+            <tr>
+              <th>التاريخ</th>
+              <th>من</th>
+              <th>إلى</th>
+              <th>رقم الراكب</th>
+              <th>المقاعد</th>
+              <th>نوع الحجز</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="requestsTableBody">
+            <!-- Requests will be loaded here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="driversTab" class="tab-content">
+      <div class="search-box">
+        <input type="text" id="driverSearchInput" placeholder="ابحث عن سائق..." oninput="filterDrivers()">
+      </div>
+
+      <div class="rides-table">
+        <table>
+          <thead>
+            <tr>
+              <th>رقم السائق</th>
+              <th>عدد الرحلات</th>
+              <th>الرحلات النشطة</th>
+              <th>الرحلات الملغية</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="driversTableBody">
+            <!-- Drivers will be loaded here -->
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -348,10 +476,12 @@
       
       const activeRides = rides.filter(ride => !ride.cancelled).length;
       const cancelledRides = rides.filter(ride => ride.cancelled).length;
+      const uniqueDrivers = new Set(rides.map(ride => ride.phone)).size;
       
       document.getElementById('activeRidesCount').textContent = activeRides;
       document.getElementById('cancelledRidesCount').textContent = cancelledRides;
       document.getElementById('requestsCount').textContent = requests.length;
+      document.getElementById('driversCount').textContent = uniqueDrivers;
     }
 
     function deleteRide(rideId) {
@@ -367,17 +497,168 @@
       updateStats();
     }
 
+    function showTab(tabName) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      // Show selected tab
+      document.getElementById(tabName + 'Tab').classList.add('active');
+      document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
+
+      // Load data
+      if (tabName === 'rides') {
+        loadRides();
+      } else if (tabName === 'requests') {
+        loadRequests();
+      } else if (tabName === 'drivers') {
+        loadDrivers();
+      }
+    }
+
+    function loadRequests() {
+      const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
+      const tableBody = document.getElementById('requestsTableBody');
+      
+      tableBody.innerHTML = requests.map(request => `
+        <tr>
+          <td>${request.date}</td>
+          <td>${request.from}</td>
+          <td>${request.to}</td>
+          <td>${request.phone}</td>
+          <td>${request.seats}</td>
+          <td>${request.fullCar ? 'سيارة كاملة' : 'مقاعد'}</td>
+          <td>
+            <button class="delete-btn" onclick="deleteRequest('${request.id}')">
+              حذف
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function loadDrivers() {
+      const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+      const drivers = {};
+
+      // Group rides by driver
+      rides.forEach(ride => {
+        if (!drivers[ride.phone]) {
+          drivers[ride.phone] = {
+            phone: ride.phone,
+            totalRides: 0,
+            activeRides: 0,
+            cancelledRides: 0
+          };
+        }
+        drivers[ride.phone].totalRides++;
+        if (ride.cancelled) {
+          drivers[ride.phone].cancelledRides++;
+        } else {
+          drivers[ride.phone].activeRides++;
+        }
+      });
+
+      const tableBody = document.getElementById('driversTableBody');
+      tableBody.innerHTML = Object.values(drivers).map(driver => `
+        <tr>
+          <td>${driver.phone}</td>
+          <td>${driver.totalRides}</td>
+          <td>${driver.activeRides}</td>
+          <td>${driver.cancelledRides}</td>
+          <td>
+            <button class="block-btn" onclick="toggleBlockDriver('${driver.phone}')">
+              حظر
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function deleteRequest(requestId) {
+      if (!confirm('هل أنت متأكد من حذف هذا الطلب؟')) {
+        return;
+      }
+
+      const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
+      const updatedRequests = requests.filter(request => request.id !== requestId);
+      localStorage.setItem('rideRequests', JSON.stringify(updatedRequests));
+      
+      loadRequests();
+      updateStats();
+    }
+
+    function toggleBlockDriver(phone) {
+      const blockedDrivers = JSON.parse(localStorage.getItem('blockedDrivers') || '[]');
+      const isBlocked = blockedDrivers.includes(phone);
+      
+      if (isBlocked) {
+        const updatedBlockedDrivers = blockedDrivers.filter(p => p !== phone);
+        localStorage.setItem('blockedDrivers', JSON.stringify(updatedBlockedDrivers));
+      } else {
+        blockedDrivers.push(phone);
+        localStorage.setItem('blockedDrivers', JSON.stringify(blockedDrivers));
+      }
+      
+      loadDrivers();
+    }
+
     function filterRides() {
       const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const statusFilter = document.getElementById('statusFilter').value;
+      const dateFilter = document.getElementById('dateFilter').value;
+      
       const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+      let filteredRides = rides;
+
+      // Apply search filter
+      if (searchTerm) {
+        filteredRides = filteredRides.filter(ride => 
+          ride.from.toLowerCase().includes(searchTerm) ||
+          ride.to.toLowerCase().includes(searchTerm) ||
+          ride.phone.includes(searchTerm)
+        );
+      }
+
+      // Apply status filter
+      if (statusFilter !== 'all') {
+        filteredRides = filteredRides.filter(ride => 
+          statusFilter === 'active' ? !ride.cancelled : ride.cancelled
+        );
+      }
+
+      // Apply date filter
+      if (dateFilter !== 'all') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const weekEnd = new Date(today);
+        weekEnd.setDate(weekEnd.getDate() + 7);
+
+        filteredRides = filteredRides.filter(ride => {
+          const rideDate = new Date(ride.date);
+          rideDate.setHours(0, 0, 0, 0);
+
+          switch (dateFilter) {
+            case 'today':
+              return rideDate.getTime() === today.getTime();
+            case 'tomorrow':
+              return rideDate.getTime() === tomorrow.getTime();
+            case 'week':
+              return rideDate >= today && rideDate <= weekEnd;
+            default:
+              return true;
+          }
+        });
+      }
+
+      // Update table
       const tableBody = document.getElementById('ridesTableBody');
-      
-      const filteredRides = rides.filter(ride => 
-        ride.from.toLowerCase().includes(searchTerm) ||
-        ride.to.toLowerCase().includes(searchTerm) ||
-        ride.phone.includes(searchTerm)
-      );
-      
       tableBody.innerHTML = filteredRides.map(ride => `
         <tr>
           <td>${formatDate(ride.date)} ${ride.time}</td>
