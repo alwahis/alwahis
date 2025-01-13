@@ -592,20 +592,20 @@
       function publishRide(event) {
         event.preventDefault();
 
-        // Check if driver is blocked
+        // Get form values
         const phone = document.getElementById('phoneNumber').value;
+
+        // Check if driver is blocked
         const blockedDrivers = JSON.parse(localStorage.getItem('blockedDrivers') || '[]');
         if (blockedDrivers.includes(phone)) {
-          alert('عذراً، لا يمكنك نشر رحلات في الوقت الحالي');
+          alert('عذراً، لا يمكنك نشر رحلات. تم حظر رقم هاتفك من قبل الإدارة.');
           return;
         }
 
-        // Get form values
         const from = document.getElementById('fromLocation').value;
         const to = document.getElementById('toLocation').value;
         const date = document.getElementById('departureDate').value;
         const time = document.getElementById('departureTime').value;
-        const phone = document.getElementById('phoneNumber').value;
         const car = document.getElementById('carType').value;
         const seats = parseInt(document.getElementById('availableSeats').value);
         const price = document.getElementById('pricePerSeat').value;

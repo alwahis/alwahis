@@ -253,10 +253,23 @@
       border-radius: 6px;
       cursor: pointer;
       font-size: 0.9rem;
+      transition: all 0.3s ease;
     }
 
     .block-btn.blocked {
       background: #636e72;
+    }
+
+    .block-btn:hover {
+      opacity: 0.9;
+    }
+
+    .status-blocked {
+      background: #ffe3e3;
+      color: #e17055;
+      padding: 0.3rem 0.8rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
     }
 
     @media (max-width: 768px) {
@@ -573,6 +586,9 @@
           <td>${driver.activeRides}</td>
           <td>${driver.cancelledRides}</td>
           <td>
+            <span class="${driver.isBlocked ? 'status-blocked' : ''}" style="margin-left: 10px">
+              ${driver.isBlocked ? 'محظور' : ''}
+            </span>
             <button class="block-btn ${driver.isBlocked ? 'blocked' : ''}" 
                     onclick="toggleBlockDriver('${driver.phone}')">
               ${driver.isBlocked ? 'إلغاء الحظر' : 'حظر'}
@@ -600,14 +616,36 @@
       const isBlocked = blockedDrivers.includes(phone);
       
       if (isBlocked) {
+        // Unblock driver
         const updatedBlockedDrivers = blockedDrivers.filter(p => p !== phone);
         localStorage.setItem('blockedDrivers', JSON.stringify(updatedBlockedDrivers));
+        alert('تم إلغاء حظر السائق بنجاح');
       } else {
-        blockedDrivers.push(phone);
-        localStorage.setItem('blockedDrivers', JSON.stringify(blockedDrivers));
+        // Block driver
+        if (confirm('هل أنت متأكد من حظر هذا السائق؟')) {
+          blockedDrivers.push(phone);
+          localStorage.setItem('blockedDrivers', JSON.stringify(blockedDrivers));
+          
+          // Cancel all active rides for this driver
+          const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+          const updatedRides = rides.map(ride => {
+            if (ride.phone === phone && !ride.cancelled) {
+              return { ...ride, cancelled: true };
+            }
+            return ride;
+          });
+          localStorage.setItem('publishedRides', JSON.stringify(updatedRides));
+          
+          alert('تم حظر السائق وإلغاء جميع رحلاته النشطة');
+        }
       }
       
+      // Refresh the drivers table
       loadDrivers();
+      // Refresh the rides table if we're on that tab
+      if (document.getElementById('ridesTab').classList.contains('active')) {
+        loadRides();
+      }
     }
 
     function filterRides() {
