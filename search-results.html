@@ -348,25 +348,25 @@
       <h2>اقترح رحلة</h2>
       <form id="suggestRideForm" onsubmit="submitSuggestedRide(event)">
         <div class="form-group">
-          <label for="fullCar">هل تريد حجز السيارة كاملة؟</label>
+          <label>هل تريد حجز السيارة كاملة؟</label>
           <div class="booking-type-options">
             <div class="radio-option">
-              <input type="radio" id="yes" name="fullCar" value="yes" onchange="toggleSeatsInput()" required>
+              <input type="radio" name="fullCar" value="yes" onclick="toggleSeatsInput(this)" required>
               <span>نعم</span>
             </div>
             <div class="radio-option">
-              <input type="radio" id="no" name="fullCar" value="no" onchange="toggleSeatsInput()" required>
+              <input type="radio" name="fullCar" value="no" onclick="toggleSeatsInput(this)" required>
               <span>لا</span>
             </div>
           </div>
         </div>
-        <div id="seatsInputGroup" class="form-group">
-          <label for="requestedSeats">عدد المقاعد المطلوبة:</label>
-          <input type="number" id="requestedSeats" name="requestedSeats" min="1" max="4" value="1" required>
+        <div id="seatsInputGroup" class="form-group" style="display: block;">
+          <label>عدد المقاعد المطلوبة</label>
+          <input type="number" id="requestedSeats" class="form-control" min="1" max="4" value="1" required>
         </div>
         <div class="form-group">
-          <label for="riderPhone">رقم هاتفك:</label>
-          <input type="tel" id="riderPhone" name="riderPhone" required pattern="^(078|077|075)[0-9]{8}$" placeholder="مثال: 07801234567">
+          <label>رقم الواتساب العراقي</label>
+          <input type="tel" id="riderPhone" class="form-control" pattern="^(078|077|075)[0-9]{8}$" placeholder="مثال: 07801234567" required>
           <small class="form-text">يجب أن يبدأ الرقم بـ 078 أو 077 أو 075</small>
         </div>
         <button type="submit" class="btn confirm-btn">إرسال الطلب</button>
@@ -476,6 +476,21 @@
       window.open(`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${message}`, '_blank');
     }
 
+    function toggleSeatsInput(radio) {
+      const seatsGroup = document.getElementById('seatsInputGroup');
+      const seatsInput = document.getElementById('requestedSeats');
+      
+      if (radio.value === 'yes') {
+        seatsGroup.style.display = 'none';
+        seatsInput.removeAttribute('required');
+        seatsInput.value = '';
+      } else {
+        seatsGroup.style.display = 'block';
+        seatsInput.setAttribute('required', 'required');
+        seatsInput.value = '1';
+      }
+    }
+
     function showSuggestRideModal() {
       // Get search parameters from URL
       const params = new URLSearchParams(window.location.search);
@@ -489,37 +504,18 @@
       modal.dataset.to = to;
       modal.dataset.date = date;
       
-      // Reset form
+      // Reset form and show seats input by default
       const form = document.getElementById('suggestRideForm');
       form.reset();
+      document.getElementById('seatsInputGroup').style.display = 'block';
+      document.getElementById('requestedSeats').value = '1';
       
-      // Show seats input by default
-      const seatsGroup = document.getElementById('seatsInputGroup');
-      seatsGroup.style.display = 'block';
-      
-      // Show modal
       modal.style.display = 'block';
     }
 
     function closeSuggestModal() {
       const modal = document.getElementById('suggestRideModal');
       modal.style.display = 'none';
-    }
-
-    function toggleSeatsInput() {
-      const fullCarValue = document.querySelector('input[name="fullCar"]:checked').value;
-      const seatsGroup = document.getElementById('seatsInputGroup');
-      const seatsInput = document.getElementById('requestedSeats');
-      
-      if (fullCarValue === 'yes') {
-        seatsGroup.style.display = 'none';
-        seatsInput.removeAttribute('required');
-        seatsInput.value = '';
-      } else {
-        seatsGroup.style.display = 'block';
-        seatsInput.setAttribute('required', 'required');
-        seatsInput.value = '1';
-      }
     }
 
     function submitSuggestedRide(event) {
