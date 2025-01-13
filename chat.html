@@ -306,18 +306,18 @@
     });
 
     function loadMessages() {
-      const phone = localStorage.getItem('currentPhone');
-      if (!phone) {
-        alert('يرجى تسجيل الدخول أولاً');
-        window.location.href = 'index.html';
-        return;
+      // Generate a random ID for this session if not exists
+      let sessionId = localStorage.getItem('sessionId');
+      if (!sessionId) {
+        sessionId = 'user_' + Date.now();
+        localStorage.setItem('sessionId', sessionId);
       }
 
       const messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
-      const userMessages = messages.filter(m => m.phone === phone);
+      const sessionMessages = messages.filter(m => m.sessionId === sessionId);
       
       const chatMessages = document.getElementById('chatMessages');
-      chatMessages.innerHTML = userMessages.map(message => createMessageElement(message)).join('');
+      chatMessages.innerHTML = sessionMessages.map(message => createMessageElement(message)).join('');
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
@@ -357,13 +357,10 @@
       const text = messageInput.value.trim();
       
       if (!text) return;
-      
-      const phone = localStorage.getItem('currentPhone');
-      if (!phone) return;
 
       const message = {
         id: Date.now(),
-        phone,
+        sessionId: localStorage.getItem('sessionId'),
         sender: 'user',
         text,
         timestamp: new Date().toISOString()
@@ -381,7 +378,7 @@
       reader.onload = function(e) {
         const message = {
           id: Date.now(),
-          phone: localStorage.getItem('currentPhone'),
+          sessionId: localStorage.getItem('sessionId'),
           sender: 'user',
           attachment: e.target.result,
           attachmentType: 'file',
@@ -401,7 +398,7 @@
       reader.onload = function(e) {
         const message = {
           id: Date.now(),
-          phone: localStorage.getItem('currentPhone'),
+          sessionId: localStorage.getItem('sessionId'),
           sender: 'user',
           attachment: e.target.result,
           attachmentType: 'image',
@@ -434,7 +431,7 @@
             reader.onload = function(e) {
               const message = {
                 id: Date.now(),
-                phone: localStorage.getItem('currentPhone'),
+                sessionId: localStorage.getItem('sessionId'),
                 sender: 'user',
                 attachment: e.target.result,
                 attachmentType: 'audio',

@@ -865,94 +865,20 @@
       }
     }
 
-    function filterRides() {
-      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-      const statusFilter = document.getElementById('statusFilter').value;
-      const dateFilter = document.getElementById('dateFilter').value;
-      
-      const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-      let filteredRides = rides;
-
-      // Apply search filter
-      if (searchTerm) {
-        filteredRides = filteredRides.filter(ride => 
-          ride.from.toLowerCase().includes(searchTerm) ||
-          ride.to.toLowerCase().includes(searchTerm) ||
-          ride.phone.includes(searchTerm)
-        );
-      }
-
-      // Apply status filter
-      if (statusFilter !== 'all') {
-        filteredRides = filteredRides.filter(ride => 
-          statusFilter === 'active' ? !ride.cancelled : ride.cancelled
-        );
-      }
-
-      // Apply date filter
-      if (dateFilter !== 'all') {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const weekEnd = new Date(today);
-        weekEnd.setDate(weekEnd.getDate() + 7);
-
-        filteredRides = filteredRides.filter(ride => {
-          const rideDate = new Date(ride.date);
-          rideDate.setHours(0, 0, 0, 0);
-
-          switch (dateFilter) {
-            case 'today':
-              return rideDate.getTime() === today.getTime();
-            case 'tomorrow':
-              return rideDate.getTime() === tomorrow.getTime();
-            case 'week':
-              return rideDate >= today && rideDate <= weekEnd;
-            default:
-              return true;
-          }
-        });
-      }
-
-      // Update table
-      const tableBody = document.getElementById('ridesTableBody');
-      tableBody.innerHTML = filteredRides.map(ride => `
-        <tr>
-          <td>${formatDate(ride.date)} ${ride.time}</td>
-          <td>${ride.from}</td>
-          <td>${ride.to}</td>
-          <td>${ride.phone}</td>
-          <td>${ride.price} د.ع</td>
-          <td>${ride.seats}</td>
-          <td>
-            <span class="status ${ride.cancelled ? 'status-cancelled' : 'status-active'}">
-              ${ride.cancelled ? 'ملغية' : 'نشطة'}
-            </span>
-          </td>
-          <td>
-            <button class="delete-btn" onclick="deleteRide('${ride.id}')">
-              حذف
-            </button>
-          </td>
-        </tr>
-      `).join('');
-    }
-
     function loadChats() {
       const messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
-      const chatsByUser = {};
+      const chatsBySession = {};
 
-      // Group messages by user
+      // Group messages by session
       messages.forEach(message => {
-        if (!chatsByUser[message.phone]) {
-          chatsByUser[message.phone] = [];
+        if (!chatsBySession[message.sessionId]) {
+          chatsBySession[message.sessionId] = [];
         }
-        chatsByUser[message.phone].push(message);
+        chatsBySession[message.sessionId].push(message);
       });
 
       // Sort chats by latest message
-      const sortedChats = Object.entries(chatsByUser)
+      const sortedChats = Object.entries(chatsBySession)
         .sort(([,a], [,b]) => {
           const lastA = a[a.length - 1].timestamp;
           const lastB = b[b.length - 1].timestamp;
@@ -960,14 +886,14 @@
         });
 
       const chatsList = document.getElementById('chatsList');
-      chatsList.innerHTML = sortedChats.map(([phone, messages]) => {
+      chatsList.innerHTML = sortedChats.map(([sessionId, messages]) => {
         const lastMessage = messages[messages.length - 1];
         const time = new Date(lastMessage.timestamp).toLocaleTimeString('ar-IQ');
         
         return `
-          <div class="chat-item" onclick="showChat('${phone}')">
+          <div class="chat-item" onclick="showChat('${sessionId}')">
             <div class="chat-item-header">
-              <div class="chat-item-phone">${phone}</div>
+              <div class="chat-item-phone">محادثة ${sessionId.replace('user_', '#')}</div>
               <div class="chat-item-time">${time}</div>
             </div>
             <div class="chat-item-preview">
@@ -978,14 +904,14 @@
       }).join('');
     }
 
-    function showChat(phone) {
+    function showChat(sessionId) {
       const messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
-      const userMessages = messages.filter(m => m.phone === phone);
+      const sessionMessages = messages.filter(m => m.sessionId === sessionId);
       
       const chatMessages = document.getElementById('chatMessages');
       chatMessages.innerHTML = `
         <div class="chat-messages-container">
-          ${userMessages.map(message => `
+          ${sessionMessages.map(message => `
             <div class="message ${message.sender === 'admin' ? 'admin' : 'user'}">
               <div class="message-text">${message.text || ''}</div>
               ${createAttachmentElement(message)}
@@ -997,7 +923,7 @@
         </div>
         <div class="chat-input">
           <textarea placeholder="اكتب رسالتك هنا..."></textarea>
-          <button onclick="sendAdminMessage('${phone}')">
+          <button onclick="sendAdminMessage('${sessionId}')">
             <i class="fas fa-paper-plane"></i>
           </button>
         </div>
@@ -1007,11 +933,80 @@
       document.querySelectorAll('.chat-item').forEach(item => {
         item.classList.remove('active');
       });
-      document.querySelector(`.chat-item[onclick="showChat('${phone}')"]`).classList.add('active');
+      document.querySelector(`.chat-item[onclick="showChat('${sessionId}')"]`).classList.add('active');
 
       // Scroll to bottom
       const container = chatMessages.querySelector('.chat-messages-container');
       container.scrollTop = container.scrollHeight;
+    }
+
+    function sendAdminMessage(sessionId) {
+      const input = document.querySelector('.chat-input textarea');
+      const text = input.value.trim();
+      
+      if (!text) return;
+
+      const message = {
+        id: Date.now(),
+        sessionId,
+        sender: 'admin',
+        text,
+        timestamp: new Date().toISOString()
+      };
+
+      const messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
+      messages.push(message);
+      localStorage.setItem('chatMessages', JSON.stringify(messages));
+
+      input.value = '';
+      showChat(sessionId);
+      loadChats();
+    }
+
+    function filterChats() {
+      const filter = document.getElementById('chatFilter').value;
+      const search = document.getElementById('chatSearch').value.toLowerCase();
+      
+      const messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
+      const chatsBySession = {};
+
+      // Group messages by session
+      messages.forEach(message => {
+        if (!chatsBySession[message.sessionId]) {
+          chatsBySession[message.sessionId] = [];
+        }
+        chatsBySession[message.sessionId].push(message);
+      });
+
+      // Filter chats
+      const filteredChats = Object.entries(chatsBySession)
+        .filter(([sessionId, messages]) => {
+          if (!sessionId.includes(search)) return false;
+          return true;
+        })
+        .sort(([,a], [,b]) => {
+          const lastA = a[a.length - 1].timestamp;
+          const lastB = b[b.length - 1].timestamp;
+          return new Date(lastB) - new Date(lastA);
+        });
+
+      const chatsList = document.getElementById('chatsList');
+      chatsList.innerHTML = filteredChats.map(([sessionId, messages]) => {
+        const lastMessage = messages[messages.length - 1];
+        const time = new Date(lastMessage.timestamp).toLocaleTimeString('ar-IQ');
+        
+        return `
+          <div class="chat-item" onclick="showChat('${sessionId}')">
+            <div class="chat-item-header">
+              <div class="chat-item-phone">محادثة ${sessionId.replace('user_', '#')}</div>
+              <div class="chat-item-time">${time}</div>
+            </div>
+            <div class="chat-item-preview">
+              ${lastMessage.text || 'مرفق'}
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
     function createAttachmentElement(message) {
@@ -1039,78 +1034,6 @@
         `;
       }
       return '';
-    }
-
-    function sendAdminMessage(phone) {
-      const input = document.querySelector('.chat-input textarea');
-      const text = input.value.trim();
-      
-      if (!text) return;
-
-      const message = {
-        id: Date.now(),
-        phone,
-        sender: 'admin',
-        text,
-        timestamp: new Date().toISOString()
-      };
-
-      const messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
-      messages.push(message);
-      localStorage.setItem('chatMessages', JSON.stringify(messages));
-
-      input.value = '';
-      showChat(phone);
-      loadChats();
-    }
-
-    function filterChats() {
-      const filter = document.getElementById('chatFilter').value;
-      const search = document.getElementById('chatSearch').value.toLowerCase();
-      
-      const messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
-      const chatsByUser = {};
-
-      // Group messages by user
-      messages.forEach(message => {
-        if (!chatsByUser[message.phone]) {
-          chatsByUser[message.phone] = [];
-        }
-        chatsByUser[message.phone].push(message);
-      });
-
-      // Filter chats
-      const filteredChats = Object.entries(chatsByUser)
-        .filter(([phone, messages]) => {
-          if (!phone.includes(search)) return false;
-          
-          if (filter === 'all') return true;
-          const isDriver = messages.some(m => m.type === 'driver');
-          return filter === 'drivers' ? isDriver : !isDriver;
-        })
-        .sort(([,a], [,b]) => {
-          const lastA = a[a.length - 1].timestamp;
-          const lastB = b[b.length - 1].timestamp;
-          return new Date(lastB) - new Date(lastA);
-        });
-
-      const chatsList = document.getElementById('chatsList');
-      chatsList.innerHTML = filteredChats.map(([phone, messages]) => {
-        const lastMessage = messages[messages.length - 1];
-        const time = new Date(lastMessage.timestamp).toLocaleTimeString('ar-IQ');
-        
-        return `
-          <div class="chat-item" onclick="showChat('${phone}')">
-            <div class="chat-item-header">
-              <div class="chat-item-phone">${phone}</div>
-              <div class="chat-item-time">${time}</div>
-            </div>
-            <div class="chat-item-preview">
-              ${lastMessage.text || 'مرفق'}
-            </div>
-          </div>
-        `;
-      }).join('');
     }
 
     function formatDate(dateStr) {
