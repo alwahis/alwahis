@@ -10,6 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
       * {
@@ -101,278 +102,30 @@
       }
       
       .btn {
+        width: 100%;
+        padding: 1rem;
         background: linear-gradient(135deg, #FF8C00, #FFA500);
         color: white;
-        padding: 1rem 2rem;
         border: none;
-        border-radius: 50px;
+        border-radius: 12px;
         font-size: 1.2rem;
         font-weight: 600;
         cursor: pointer;
-        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(255,140,0,0.2);
       }
       
       .btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(255,140,0,0.3);
-      }
-      
-      .no-results {
-        text-align: center;
-        padding: 3rem;
-        background: white;
-        border-radius: 20px;
-        margin-top: 2rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-      }
-      
-      .no-results h3 {
-        color: #2d3436;
-        margin-bottom: 1rem;
-      }
-      
-      .no-results p {
-        color: #636e72;
-      }
-      
-      .results {
-        display: none;
-      }
-      
-      .results.show {
-        display: block;
-      }
-      
-      .date-group {
-        margin-bottom: 3rem;
-      }
-      
-      .date-header {
-        color: #2d3436;
-        font-size: 1.4rem;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid #e9ecef;
-      }
-      
-      .ride-card {
-        background: white;
-        border-radius: 20px;
-        padding: 2rem;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        transition: all 0.3s ease;
-        border: 2px solid transparent;
-      }
-      
-      .ride-card:hover {
-        transform: translateY(-5px);
-        border-color: #FF8C00;
-      }
-      
-      .ride-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1.5rem;
-        border-bottom: 2px solid #f1f3f5;
-      }
-      
-      .ride-cities {
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: #2d3436;
-      }
-      
-      .ride-price {
-        color: #FF8C00;
-        font-weight: 700;
-        font-size: 1.4rem;
-        background: rgba(255,140,0,0.1);
-        padding: 0.5rem 1rem;
-        border-radius: 50px;
-      }
-      
-      .ride-details {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 1.5rem;
-      }
-      
-      .detail-item {
-        color: #636e72;
-        line-height: 1.6;
-      }
-      
-      .detail-item strong {
-        color: #2d3436;
-        display: block;
-        margin-bottom: 0.3rem;
-      }
-      
-      .whatsapp-btn {
-        background: linear-gradient(135deg, #25D366, #128C7E);
-      }
-      
-      .whatsapp-btn:hover {
-        background: linear-gradient(135deg, #128C7E, #075E54);
-      }
-      
-      .book-btn {
-        background: linear-gradient(135deg, #FF8C00, #FFA500);
-      }
-      
-      .confirm-btn {
-        background: linear-gradient(135deg, #FF8C00, #FFA500);
-        margin-top: 1rem;
-      }
-      
-      .modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.5);
-        z-index: 1000;
-        overflow: auto;
-      }
-      
-      .modal-content {
-        background: white;
-        margin: 50px auto;
-        padding: 2rem;
-        border-radius: 20px;
-        max-width: 500px;
-        position: relative;
-        animation: modalSlideIn 0.3s ease;
-      }
-      
-      @keyframes modalSlideIn {
-        from {
-          transform: translateY(-100px);
-          opacity: 0;
-        }
-        to {
-          transform: translateY(0);
-          opacity: 1;
-        }
-      }
-      
-      .close-modal {
-        position: absolute;
-        right: 20px;
-        top: 10px;
-        font-size: 28px;
-        cursor: pointer;
-        color: #666;
-      }
-      
-      .booking-details {
-        margin: 2rem 0;
-        padding: 1rem;
-        background: #f8f9fa;
-        border-radius: 12px;
-      }
-      
-      .detail-row {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 1rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid #e9ecef;
-      }
-      
-      .detail-row:last-child {
-        margin-bottom: 0;
-        padding-bottom: 0;
-        border-bottom: none;
-      }
-      
-      .seats-input {
-        margin: 2rem 0;
-      }
-      
-      .total-price {
-        margin-top: 1rem;
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: #FF8C00;
-        text-align: left;
-      }
-      
-      .confirmation-content {
-        text-align: center;
-        padding: 3rem 2rem;
-      }
-      
-      .confirmation-icon {
-        width: 80px;
-        height: 80px;
-        background: #FF8C00;
-        color: white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 40px;
-        margin: 0 auto 2rem;
-      }
-      
-      .confirmation-content h2 {
-        margin-bottom: 1rem;
-        color: #2d3436;
-      }
-      
-      .confirmation-content p {
-        color: #636e72;
-        margin-bottom: 2rem;
-      }
-      
-      .suggest-btn {
-        background: linear-gradient(135deg, #4CAF50, #45a049);
-        margin-top: 1rem;
-        min-width: 200px;
-      }
-
-      .car-type-options,
-      .booking-type-options {
-        display: flex;
-        gap: 2rem;
-        margin-top: 0.5rem;
-      }
-
-      .radio-option {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        cursor: pointer;
-      }
-
-      .radio-option input[type="radio"] {
-        width: 1.2rem;
-        height: 1.2rem;
+        box-shadow: 0 4px 15px rgba(255,140,0,0.2);
       }
       
       @media (max-width: 768px) {
         .search-form {
           padding: 1.5rem;
-        }
-        
-        .ride-header {
-          flex-direction: column;
-          text-align: center;
-          gap: 1rem;
-        }
-        
-        .ride-price {
-          width: 100%;
-          text-align: center;
         }
       }
     </style>
@@ -383,7 +136,7 @@
         <a href="index.html" class="logo">عالواهس</a>
       </div>
     </nav>
-    
+
     <main class="main-content">
       <form class="search-form" onsubmit="searchRides(event)">
         <h2>ابحث عن رحلتك</h2>
@@ -405,301 +158,39 @@
         
         <div class="form-group">
           <label>عدد المقاعد المطلوبة</label>
-          <input type="number" id="seatsNeeded" class="form-control" min="1" value="1" required>
+          <input type="number" id="seatsNeeded" class="form-control" min="1" max="6" value="1" required>
         </div>
         
-        <button type="submit" class="btn">ابحث عن رحلات</button>
+        <button type="submit" class="btn">
+          <i class="fas fa-search"></i>
+          ابحث عن رحلة
+        </button>
       </form>
-      
-      <!-- No Results Message with Suggest Ride Button -->
-      <div id="noResults" class="no-results" style="display: none;">
-        <h3>لا توجد رحلات متوفرة</h3>
-        <p>لم نجد أي رحلات متطابقة مع بحثك. يمكنك اقتراح رحلة جديدة وسيتم إعلام السائقين بها.</p>
-        <button class="btn suggest-btn" onclick="showSuggestRideModal()">اقترح رحلة</button>
-      </div>
+    </main>
 
-      <div id="searchResults" class="results">
-        <!-- Results will be dynamically added here -->
-      </div>
-
-      <!-- Booking Modal -->
-      <div id="bookingModal" class="modal">
-        <div class="modal-content">
-          <span class="close-modal" onclick="closeBookingModal()">&times;</span>
-          <h2>احجز رحلتك</h2>
-          
-          <div class="booking-details">
-            <div class="detail-row">
-              <span>المسار:</span>
-              <span id="routeText"></span>
-            </div>
-            <div class="detail-row">
-              <span>وقت المغادرة:</span>
-              <span id="timeText"></span>
-            </div>
-            <div class="detail-row">
-              <span>السيارة:</span>
-              <span id="carText"></span>
-            </div>
-            <div class="detail-row">
-              <span>السائق:</span>
-              <span id="driverText"></span>
-            </div>
-            <div class="detail-row">
-              <span>السعر للمقعد:</span>
-              <span id="priceText"></span>
-            </div>
-          </div>
-          
-          <div class="form-group seats-input">
-            <label>عدد المقاعد المطلوبة</label>
-            <input type="number" id="seatsInput" min="1" value="1" class="form-control">
-            <div class="total-price">
-              المجموع: <span id="totalPrice">٢٥,٠٠٠</span> د.ع
-            </div>
-          </div>
-          
-          <button class="btn confirm-btn" onclick="showConfirmation()">تأكيد الحجز</button>
-        </div>
-      </div>
-
-      <!-- Confirmation Modal -->
-      <div id="confirmationModal" class="modal">
-        <div class="modal-content confirmation-content">
-          <span class="close-modal" onclick="closeConfirmationModal()">&times;</span>
-          <div class="confirmation-icon">✓</div>
-          <h2>تم تسجيل طلب الحجز</h2>
-          <p>للتأكيد النهائي للحجز، يرجى التواصل مع السائق عبر واتساب</p>
-          <button id="whatsappButton" class="btn whatsapp-btn" onclick="contactDriver()">
-            تواصل مع السائق
-          </button>
-        </div>
-      </div>
-
-      <!-- Suggest Ride Modal -->
-      <div id="suggestRideModal" class="modal">
-        <div class="modal-content">
-          <span class="close-modal" onclick="closeSuggestModal()">&times;</span>
-          <h2>اقترح رحلة</h2>
-          
-          <form id="suggestRideForm" onsubmit="submitSuggestedRide(event)">
-            <div class="form-group">
-              <label>نوع السيارة المطلوبة</label>
-              <div class="car-type-options">
-                <label class="radio-option">
-                  <input type="radio" name="carType" value="suv" required>
-                  <span>دفع رباعي</span>
-                </label>
-                <label class="radio-option">
-                  <input type="radio" name="carType" value="sedan" required>
-                  <span>صالون</span>
-                </label>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>هل تريد حجز السيارة بالكامل؟</label>
-              <div class="booking-type-options">
-                <label class="radio-option">
-                  <input type="radio" name="fullCar" value="yes" onchange="toggleSeatsInput()" required>
-                  <span>نعم</span>
-                </label>
-                <label class="radio-option">
-                  <input type="radio" name="fullCar" value="no" onchange="toggleSeatsInput()" required>
-                  <span>لا</span>
-                </label>
-              </div>
-            </div>
-
-            <div id="seatsInputGroup" class="form-group" style="display: none;">
-              <label>عدد المقاعد المطلوبة</label>
-              <input type="number" id="requestedSeats" class="form-control" min="1" max="6" value="1">
-            </div>
-
-            <div class="form-group">
-              <label>رقم الواتساب العراقي</label>
-              <input type="tel" id="riderPhone" class="form-control" placeholder="مثال: 07801234567" required>
-              <small class="form-text">أدخل رقم الواتساب العراقي الخاص بك. يجب أن يبدأ الرقم بـ 078 أو 077 أو 075</small>
-            </div>
-
-            <button type="submit" class="btn confirm-btn">تأكيد الطلب</button>
-          </form>
-        </div>
-      </div>
-
-      <script>
-        let currentBookingData = null;
+    <script>
+      function searchRides(event) {
+        event.preventDefault();
         
-        function searchRides(event) {
-          event.preventDefault();
-          
-          const from = document.getElementById('fromLocation').value;
-          const to = document.getElementById('toLocation').value;
-          const date = document.getElementById('travelDate').value;
-          
-          if (!from || !to || !date) {
-            alert('الرجاء ملء جميع الحقول المطلوبة');
-            return;
-          }
-
-          // Redirect to search results page with parameters
-          window.location.href = `search-results.html?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&date=${encodeURIComponent(date)}`;
+        const from = document.getElementById('fromLocation').value;
+        const to = document.getElementById('toLocation').value;
+        const date = document.getElementById('travelDate').value;
+        const seats = document.getElementById('seatsNeeded').value;
+        
+        if (!from || !to || !date || !seats) {
+          alert('الرجاء ملء جميع الحقول المطلوبة');
+          return;
         }
-        
-        // Set minimum date to today
+
+        // Redirect to search results page with parameters
+        window.location.href = `search-results.html?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&date=${encodeURIComponent(date)}&seats=${encodeURIComponent(seats)}`;
+      }
+      
+      // Set minimum date to today
+      document.addEventListener('DOMContentLoaded', function() {
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('travelDate').min = today;
-        
-        function openBookingModal(button) {
-          const modal = document.getElementById('bookingModal');
-          const data = button.dataset;
-          currentBookingData = data;
-          
-          // Update modal content
-          document.getElementById('routeText').textContent = data.route;
-          document.getElementById('timeText').textContent = data.time;
-          document.getElementById('carText').textContent = data.car;
-          document.getElementById('driverText').textContent = data.driver;
-          document.getElementById('priceText').textContent = data.price + ' د.ع';
-          
-          // Reset seats input
-          const seatsInput = document.getElementById('seatsInput');
-          seatsInput.value = 1;
-          seatsInput.max = data.seats;
-          
-          updateTotalPrice();
-          modal.style.display = 'block';
-        }
-        
-        function closeBookingModal() {
-          document.getElementById('bookingModal').style.display = 'none';
-        }
-        
-        function closeConfirmationModal() {
-          document.getElementById('confirmationModal').style.display = 'none';
-        }
-        
-        function updateTotalPrice() {
-          const seats = document.getElementById('seatsInput').value;
-          const price = currentBookingData.price;
-          const total = seats * price;
-          document.getElementById('totalPrice').textContent = total.toLocaleString('ar-IQ');
-        }
-        
-        function showConfirmation() {
-          closeBookingModal();
-          document.getElementById('confirmationModal').style.display = 'block';
-        }
-        
-        function contactDriver() {
-          const phone = currentBookingData.phone;  // Use driver's phone number exactly as entered
-          const seats = document.getElementById('seatsInput').value;
-          const route = currentBookingData.route;
-          const time = currentBookingData.time;
-          
-          const message = encodeURIComponent(`السلام عليكم، أود حجز ${seats} مقعد لرحلة ${route} الساعة ${time}`);
-          
-          // Format phone number for WhatsApp URL
-          let whatsappNumber = phone.replace(/\D/g, ''); // Remove any non-digit characters
-          if (whatsappNumber.startsWith('00')) {
-            whatsappNumber = whatsappNumber.substring(2);
-          }
-          if (whatsappNumber.startsWith('0')) {
-            whatsappNumber = '964' + whatsappNumber.substring(1);
-          }
-          if (!whatsappNumber.startsWith('964')) {
-            whatsappNumber = '964' + whatsappNumber;
-          }
-          
-          const url = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${message}`;
-          
-          // Open WhatsApp in a new tab
-          window.open(url, '_blank');
-        }
-        
-        // Event listener for seats input
-        document.getElementById('seatsInput').addEventListener('input', updateTotalPrice);
-        
-        // Close modals when clicking outside
-        window.onclick = function(event) {
-          const bookingModal = document.getElementById('bookingModal');
-          const confirmationModal = document.getElementById('confirmationModal');
-          if (event.target === bookingModal) {
-            closeBookingModal();
-          } else if (event.target === confirmationModal) {
-            closeConfirmationModal();
-          }
-        }
-
-        function showSuggestRideModal() {
-          // Get search form data to use in the suggestion
-          const fromLocation = document.getElementById('fromLocation').value;
-          const toLocation = document.getElementById('toLocation').value;
-          const travelDate = document.getElementById('travelDate').value;
-          
-          // Store in modal's dataset for later use
-          const modal = document.getElementById('suggestRideModal');
-          modal.dataset.from = fromLocation;
-          modal.dataset.to = toLocation;
-          modal.dataset.date = travelDate;
-          
-          modal.style.display = 'block';
-        }
-
-        function closeSuggestModal() {
-          document.getElementById('suggestRideModal').style.display = 'none';
-        }
-
-        function toggleSeatsInput() {
-          const fullCarValue = document.querySelector('input[name="fullCar"]:checked').value;
-          const seatsGroup = document.getElementById('seatsInputGroup');
-          const seatsInput = document.getElementById('requestedSeats');
-          
-          if (fullCarValue === 'yes') {
-            seatsGroup.style.display = 'none';
-            seatsInput.removeAttribute('required');
-          } else {
-            seatsGroup.style.display = 'block';
-            seatsInput.setAttribute('required', 'required');
-          }
-        }
-
-        function submitSuggestedRide(event) {
-          event.preventDefault();
-          
-          const modal = document.getElementById('suggestRideModal');
-          const fromLocation = modal.dataset.from;
-          const toLocation = modal.dataset.to;
-          const travelDate = modal.dataset.date;
-          const carType = document.querySelector('input[name="carType"]:checked').value;
-          const fullCar = document.querySelector('input[name="fullCar"]:checked').value;
-          const seats = fullCar === 'yes' ? 'full' : document.getElementById('requestedSeats').value;
-          const phone = document.getElementById('riderPhone').value;
-
-          // Create ride request object
-          const rideRequest = {
-            id: Date.now(),
-            from: fromLocation,
-            to: toLocation,
-            date: travelDate,
-            carType: carType,
-            fullCar: fullCar === 'yes',
-            seats: seats,
-            phone: phone,
-            status: 'pending',
-            createdAt: new Date().toISOString()
-          };
-
-          // Store in localStorage
-          const rideRequests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
-          rideRequests.push(rideRequest);
-          localStorage.setItem('rideRequests', JSON.stringify(rideRequests));
-
-          // Close modal and show success message
-          closeSuggestModal();
-          alert('تم تسجيل طلبك بنجاح! سيتم إعلام السائقين بالرحلة المطلوبة.');
-        }
-      </script>
-    </main>
+      });
+    </script>
   </body>
 </html>
