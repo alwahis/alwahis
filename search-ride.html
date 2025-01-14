@@ -359,6 +359,128 @@
         height: 1.2rem;
       }
       
+      .results-container {
+        margin-top: 2rem;
+      }
+      
+      .ride-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        transition: transform 0.2s ease;
+      }
+      
+      .ride-card:hover {
+        transform: translateY(-2px);
+      }
+      
+      .ride-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.2rem;
+      }
+      
+      .route-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #2d3436;
+      }
+      
+      .price {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #FF8C00;
+      }
+      
+      .ride-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+      
+      .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #636e72;
+      }
+      
+      .detail-item i {
+        color: #FF8C00;
+      }
+      
+      .contact-btn {
+        width: 100%;
+        padding: 1rem;
+        background: #25D366;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+      }
+      
+      .contact-btn:hover {
+        background: #128C7E;
+      }
+      
+      .no-results {
+        text-align: center;
+        padding: 3rem;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      }
+      
+      .no-results i {
+        font-size: 3rem;
+        color: #FF8C00;
+        margin-bottom: 1rem;
+      }
+      
+      .no-results h3 {
+        font-size: 1.5rem;
+        color: #2d3436;
+        margin-bottom: 1rem;
+      }
+      
+      .no-results p {
+        color: #636e72;
+        margin-bottom: 1.5rem;
+      }
+      
+      .suggest-ride-btn {
+        background: #FF8C00;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 1rem 2rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+      }
+      
+      .suggest-ride-btn:hover {
+        background: #FFA500;
+      }
+      
       @media (max-width: 768px) {
         .search-form {
           padding: 1.5rem;
@@ -405,21 +527,17 @@
         
         <div class="form-group">
           <label>عدد المقاعد المطلوبة</label>
-          <input type="number" id="seatsNeeded" class="form-control" min="1" value="1" required>
+          <input type="number" id="seatsNeeded" class="form-control" min="1" max="6" value="1" required>
         </div>
         
-        <button type="submit" class="btn">ابحث عن رحلات</button>
+        <button type="submit" class="btn">
+          <i class="fas fa-search"></i>
+          ابحث عن رحلة
+        </button>
       </form>
-      
-      <!-- No Results Message with Suggest Ride Button -->
-      <div id="noResults" class="no-results" style="display: none;">
-        <h3>لا توجد رحلات متوفرة</h3>
-        <p>لم نجد أي رحلات متطابقة مع بحثك. يمكنك اقتراح رحلة جديدة وسيتم إعلام السائقين بها.</p>
-        <button class="btn suggest-btn" onclick="showSuggestRideModal()">اقترح رحلة</button>
-      </div>
 
-      <div id="searchResults" class="results">
-        <!-- Results will be dynamically added here -->
+      <div id="searchResults" class="results-container">
+        <!-- Search results will be shown here -->
       </div>
 
       <!-- Booking Modal -->
@@ -536,20 +654,118 @@
           const from = document.getElementById('fromLocation').value;
           const to = document.getElementById('toLocation').value;
           const date = document.getElementById('travelDate').value;
+          const seatsNeeded = parseInt(document.getElementById('seatsNeeded').value);
           
-          if (!from || !to || !date) {
-            alert('الرجاء ملء جميع الحقول المطلوبة');
+          // Get published rides from localStorage
+          const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+          
+          // Filter matching rides
+          const matchingRides = rides.filter(ride => {
+            const rideDate = new Date(ride.date);
+            const searchDate = new Date(date);
+            rideDate.setHours(0, 0, 0, 0);
+            searchDate.setHours(0, 0, 0, 0);
+            
+            return (
+              ride.from.toLowerCase().includes(from.toLowerCase()) &&
+              ride.to.toLowerCase().includes(to.toLowerCase()) &&
+              rideDate.getTime() === searchDate.getTime() &&
+              parseInt(ride.seats) >= seatsNeeded
+            );
+          });
+
+          const resultsContainer = document.getElementById('searchResults');
+          
+          if (matchingRides.length === 0) {
+            resultsContainer.innerHTML = `
+              <div class="no-results">
+                <i class="fas fa-search"></i>
+                <h3>لا توجد رحلات متاحة</h3>
+                <p>لم نجد رحلات متاحة في هذا المسار والتاريخ. يمكنك نشر طلب رحلة وسيتواصل معك السائقون المتجهون لنفس الوجهة.</p>
+                <button onclick="showSuggestRideModal()" class="suggest-ride-btn">
+                  <i class="fas fa-plus"></i>
+                  نشر طلب رحلة
+                </button>
+              </div>
+            `;
             return;
           }
 
-          // Redirect to search results page with parameters
-          window.location.href = `search-results.html?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&date=${encodeURIComponent(date)}`;
+          // Display matching rides
+          resultsContainer.innerHTML = matchingRides.map(ride => `
+            <div class="ride-card">
+              <div class="ride-header">
+                <div class="route-info">
+                  <span>${ride.from}</span>
+                  <i class="fas fa-arrow-left"></i>
+                  <span>${ride.to}</span>
+                </div>
+                <div class="price">
+                  ${parseInt(ride.price).toLocaleString('ar-IQ')} د.ع
+                </div>
+              </div>
+
+              <div class="ride-details">
+                <div class="detail-item">
+                  <i class="fas fa-calendar"></i>
+                  <span>${formatDate(ride.date)}</span>
+                </div>
+                <div class="detail-item">
+                  <i class="fas fa-clock"></i>
+                  <span>${ride.time}</span>
+                </div>
+                <div class="detail-item">
+                  <i class="fas fa-car"></i>
+                  <span>${ride.carType}</span>
+                </div>
+                <div class="detail-item">
+                  <i class="fas fa-users"></i>
+                  <span>${ride.seats} مقاعد</span>
+                </div>
+              </div>
+
+              <button onclick="contactDriver('${ride.phone}', '${ride.from}', '${ride.to}', '${ride.date}', ${seatsNeeded})" class="contact-btn">
+                <i class="fab fa-whatsapp"></i>
+                تواصل مع السائق
+              </button>
+            </div>
+          `).join('');
         }
-        
+
+        function formatDate(dateStr) {
+          const options = { year: 'numeric', month: 'long', day: 'numeric' };
+          return new Date(dateStr).toLocaleDateString('ar-IQ', options);
+        }
+
+        function formatPhone(phone) {
+          // Remove any non-digit characters
+          const digits = phone.replace(/\D/g, '');
+          
+          // If the number starts with 0, replace it with 964
+          if (digits.startsWith('0')) {
+            return '964' + digits.slice(1);
+          }
+          
+          return digits;
+        }
+
+        function contactDriver(phone, from, to, date, seats) {
+          // Format message
+          const message = encodeURIComponent(`السلام عليكم، أود حجز ${seats} مقعد لرحلة ${from} إلى ${to} بتاريخ ${formatDate(date)}`);
+          
+          // Format phone number for WhatsApp
+          const formattedPhone = formatPhone(phone);
+          
+          // Open WhatsApp
+          window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
+        }
+
         // Set minimum date to today
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('travelDate').min = today;
-        
+        document.addEventListener('DOMContentLoaded', function() {
+          const today = new Date().toISOString().split('T')[0];
+          document.getElementById('travelDate').min = today;
+        });
+
         function openBookingModal(button) {
           const modal = document.getElementById('bookingModal');
           const data = button.dataset;
@@ -591,46 +807,6 @@
           document.getElementById('confirmationModal').style.display = 'block';
         }
         
-        function contactDriver() {
-          const phone = currentBookingData.phone;  // Use driver's phone number exactly as entered
-          const seats = document.getElementById('seatsInput').value;
-          const route = currentBookingData.route;
-          const time = currentBookingData.time;
-          
-          const message = encodeURIComponent(`السلام عليكم، أود حجز ${seats} مقعد لرحلة ${route} الساعة ${time}`);
-          
-          // Format phone number for WhatsApp URL
-          let whatsappNumber = phone.replace(/\D/g, ''); // Remove any non-digit characters
-          if (whatsappNumber.startsWith('00')) {
-            whatsappNumber = whatsappNumber.substring(2);
-          }
-          if (whatsappNumber.startsWith('0')) {
-            whatsappNumber = '964' + whatsappNumber.substring(1);
-          }
-          if (!whatsappNumber.startsWith('964')) {
-            whatsappNumber = '964' + whatsappNumber;
-          }
-          
-          const url = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${message}`;
-          
-          // Open WhatsApp in a new tab
-          window.open(url, '_blank');
-        }
-        
-        // Event listener for seats input
-        document.getElementById('seatsInput').addEventListener('input', updateTotalPrice);
-        
-        // Close modals when clicking outside
-        window.onclick = function(event) {
-          const bookingModal = document.getElementById('bookingModal');
-          const confirmationModal = document.getElementById('confirmationModal');
-          if (event.target === bookingModal) {
-            closeBookingModal();
-          } else if (event.target === confirmationModal) {
-            closeConfirmationModal();
-          }
-        }
-
         function showSuggestRideModal() {
           // Get search form data to use in the suggestion
           const fromLocation = document.getElementById('fromLocation').value;
@@ -698,6 +874,20 @@
           // Close modal and show success message
           closeSuggestModal();
           alert('تم تسجيل طلبك بنجاح! سيتم إعلام السائقين بالرحلة المطلوبة.');
+        }
+        
+        // Event listener for seats input
+        document.getElementById('seatsInput').addEventListener('input', updateTotalPrice);
+        
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+          const bookingModal = document.getElementById('bookingModal');
+          const confirmationModal = document.getElementById('confirmationModal');
+          if (event.target === bookingModal) {
+            closeBookingModal();
+          } else if (event.target === confirmationModal) {
+            closeConfirmationModal();
+          }
         }
       </script>
     </main>
