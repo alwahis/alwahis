@@ -446,6 +446,19 @@
       width: 100%;
     }
 
+    .time {
+      font-size: 0.9em;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    table td {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+      vertical-align: middle;
+      line-height: 1.4;
+    }
+
     @media (max-width: 768px) {
       .stats {
         grid-template-columns: 1fr;
@@ -690,28 +703,40 @@
         }
         
         // Sort rides by date (newest first)
-        rides.sort((a, b) => new Date(b.rawDateTime || b.date) - new Date(a.rawDateTime || a.date));
+        rides.sort((a, b) => {
+          const dateA = a.rawDateTime ? new Date(a.rawDateTime) : new Date(a.date);
+          const dateB = b.rawDateTime ? new Date(b.rawDateTime) : new Date(b.date);
+          return dateB - dateA;
+        });
         
-        tableBody.innerHTML = rides.map(ride => `
-          <tr>
-            <td>${formatDate(ride.date)} ${ride.time || ''}</td>
-            <td>${ride.from || ''}</td>
-            <td>${ride.to || ''}</td>
-            <td>${ride.phone || ''}</td>
-            <td>${ride.price || 0} د.ع</td>
-            <td>${ride.seats || 1}</td>
-            <td>
-              <span class="status ${ride.cancelled ? 'status-cancelled' : 'status-active'}">
-                ${ride.cancelled ? 'ملغية' : 'نشطة'}
-              </span>
-            </td>
-            <td>
-              <button class="delete-btn" onclick="deleteRide('${ride.id}')">
-                حذف
-              </button>
-            </td>
-          </tr>
-        `).join('');
+        tableBody.innerHTML = rides.map(ride => {
+          const formattedDate = formatDate(ride.rawDateTime || ride.date);
+          const formattedTime = ride.time ? ride.time.replace(/^(\d{1,2}:\d{2}).*$/, '$1') : '';
+          
+          return `
+            <tr>
+              <td>
+                <div>${formattedDate}</div>
+                ${formattedTime ? `<div class="time">${formattedTime}</div>` : ''}
+              </td>
+              <td>${ride.from || ''}</td>
+              <td>${ride.to || ''}</td>
+              <td>${ride.phone || ''}</td>
+              <td>${ride.price || 0} د.ع</td>
+              <td>${ride.seats || 1}</td>
+              <td>
+                <span class="status ${ride.cancelled ? 'status-cancelled' : 'status-active'}">
+                  ${ride.cancelled ? 'ملغية' : 'نشطة'}
+                </span>
+              </td>
+              <td>
+                <button class="delete-btn" onclick="deleteRide('${ride.id}')">
+                  حذف
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
 
         updateStats();
       } catch (error) {
@@ -1123,15 +1148,35 @@
     }
 
     function formatDate(dateStr) {
-      if (!dateStr) return '';
-      const date = new Date(dateStr);
-      return new Intl.DateTimeFormat('ar-IQ', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit', 
-        minute: '2-digit'
-      }).format(date);
+      try {
+        if (!dateStr) return '';
+        
+        // Handle both date string formats
+        let date;
+        if (dateStr.includes('T')) {
+          // ISO format
+          date = new Date(dateStr);
+        } else {
+          // DD/MM/YYYY format
+          const [day, month, year] = dateStr.split('/');
+          date = new Date(year, month - 1, day);
+        }
+        
+        if (isNaN(date.getTime())) {
+          console.error('Invalid date:', dateStr);
+          return dateStr;
+        }
+        
+        return new Intl.DateTimeFormat('ar-IQ', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          weekday: 'long'
+        }).format(date);
+      } catch (error) {
+        console.error('Error formatting date:', error);
+        return dateStr;
+      }
     }
 
     async function sha256(message) {
