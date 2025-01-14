@@ -397,91 +397,100 @@
     });
 
     function loadRides(from, to, date) {
-      // Get published rides from localStorage
       const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+      const container = document.querySelector('.container');
       
-      // Filter rides based on search criteria
+      // Filter matching rides
       const matchingRides = rides.filter(ride => {
-        // Use rawDateTime for comparison since it's in ISO format
-        const rideDate = new Date(ride.rawDateTime).toDateString();
-        const searchDate = new Date(date).toDateString();
-        return ride.from.toLowerCase() === from.toLowerCase() &&
-               ride.to.toLowerCase() === to.toLowerCase() &&
-               rideDate === searchDate;
+        const rideDate = new Date(ride.date);
+        const searchDate = new Date(date);
+        rideDate.setHours(0, 0, 0, 0);
+        searchDate.setHours(0, 0, 0, 0);
+
+        return (
+          ride.from.toLowerCase().includes(from.toLowerCase()) &&
+          ride.to.toLowerCase().includes(to.toLowerCase()) &&
+          rideDate.getTime() === searchDate.getTime()
+        );
       });
 
-      // Filter out cancelled rides
-      const activeRides = matchingRides.filter(ride => !ride.cancelled);
+      // Update search summary
+      document.getElementById('fromLocation').textContent = from;
+      document.getElementById('toLocation').textContent = to;
+      document.getElementById('searchDate').textContent = formatDate(date);
 
-      const resultsContainer = document.getElementById('searchResults');
-      
-      if (activeRides.length === 0) {
-        resultsContainer.innerHTML = `
+      if (matchingRides.length === 0) {
+        container.innerHTML += `
           <div class="no-results">
-            <h2>لم نجد رحلات مطابقة</h2>
-            <p>لم نجد رحلات تطابق معايير بحثك. يمكنك اقتراح رحلة وسنخبرك عندما تتوفر رحلة مناسبة.</p>
+            <h2>لا توجد رحلات متاحة</h2>
+            <p>لم نجد أي رحلات متاحة في هذا المسار والتاريخ</p>
             <div class="no-results-actions">
-              <button onclick="showSuggestRideModal()" class="suggest-ride-btn">اقترح رحلة</button>
-              <a href="search-ride.html" class="back-btn">العودة للبحث</a>
+              <button onclick="showSuggestRideModal()" class="suggest-ride-btn">
+                <i class="fas fa-plus"></i>
+                نشر طلب رحلة
+              </button>
+              <a href="search-ride.html" class="back-btn">
+                <i class="fas fa-search"></i>
+                بحث جديد
+              </a>
             </div>
           </div>
         `;
         return;
       }
 
-      resultsContainer.innerHTML = activeRides.map(ride => `
+      // Display matching rides
+      const ridesHTML = matchingRides.map(ride => `
         <div class="ride-card">
           <div class="ride-header">
             <div class="route-info">
               <span>${ride.from}</span>
-              <span>→</span>
+              <i class="fas fa-arrow-left"></i>
               <span>${ride.to}</span>
             </div>
-            <div class="price">${ride.price} د.ع</div>
-          </div>
-          
-          <div class="ride-details">
-            <div class="detail-item">
-              <span>التاريخ:</span>
-              <span>${ride.date}</span>
-            </div>
-            <div class="detail-item">
-              <span>الوقت:</span>
-              <span>${ride.time}</span>
-            </div>
-            <div class="detail-item">
-              <span>نوع السيارة:</span>
-              <span>${ride.car === 'suv' ? 'دفع رباعي' : 'صالون'}</span>
-            </div>
-            <div class="detail-item">
-              <span>المقاعد المتوفرة:</span>
-              <span>${ride.seats}</span>
+            <div class="price">
+              ${parseInt(ride.price).toLocaleString('ar-IQ')} د.ع
             </div>
           </div>
 
-          <button class="contact-btn" onclick="contactDriver('${ride.phone}', '${ride.from}', '${ride.to}', '${ride.rawDateTime}')">
+          <div class="ride-details">
+            <div class="detail-item">
+              <i class="fas fa-calendar"></i>
+              <span>${formatDate(ride.date)}</span>
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-clock"></i>
+              <span>${ride.time}</span>
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-car"></i>
+              <span>${ride.carType}</span>
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-users"></i>
+              <span>${ride.seats} مقاعد</span>
+            </div>
+          </div>
+
+          <button onclick="contactDriver('${ride.phone}', '${ride.from}', '${ride.to}', '${ride.date}')" class="contact-btn">
+            <i class="fab fa-whatsapp"></i>
             تواصل مع السائق
           </button>
         </div>
       `).join('');
+
+      container.innerHTML += ridesHTML;
     }
 
     function contactDriver(phone, from, to, date) {
-      const message = encodeURIComponent(`السلام عليكم، شفت إعلان رحلتك من ${from} إلى ${to} بتاريخ ${new Date(date).toLocaleDateString('ar-IQ')}. هل ما زالت المقاعد متوفرة؟`);
+      // Format message
+      const message = encodeURIComponent(`السلام عليكم، شاهدت رحلتك من ${from} إلى ${to} بتاريخ ${formatDate(date)} على تطبيق عالواهس`);
       
-      // Format phone number for WhatsApp URL
-      let whatsappNumber = phone.replace(/\D/g, '');
-      if (whatsappNumber.startsWith('00')) {
-        whatsappNumber = whatsappNumber.substring(2);
-      }
-      if (whatsappNumber.startsWith('0')) {
-        whatsappNumber = '964' + whatsappNumber.substring(1);
-      }
-      if (!whatsappNumber.startsWith('964')) {
-        whatsappNumber = '964' + whatsappNumber;
-      }
+      // Format phone number for WhatsApp
+      const formattedPhone = formatPhone(phone);
       
-      window.open(`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${message}`, '_blank');
+      // Open WhatsApp
+      window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
     }
 
     // Add event listener for radio buttons
