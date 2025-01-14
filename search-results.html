@@ -59,83 +59,91 @@
       
       .search-summary {
         background: white;
-        border-radius: 15px;
-        padding: 1.5rem;
+        border-radius: 20px;
+        padding: 2rem;
         margin-bottom: 2rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
       }
       
       .search-summary h2 {
         color: #2d3436;
-        margin-bottom: 1rem;
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
       }
       
-      .search-details {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 2rem;
+      .summary-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
       }
       
-      .search-detail {
+      .summary-item {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.8rem;
       }
       
-      .search-detail i {
+      .summary-item i {
         color: #FF8C00;
+        font-size: 1.2rem;
       }
       
-      .results-container {
-        margin-top: 2rem;
+      .summary-item span {
+        color: #2d3436;
+        font-weight: 500;
       }
       
       .ride-card {
         background: white;
-        border-radius: 15px;
-        padding: 1.5rem;
+        border-radius: 20px;
+        padding: 2rem;
         margin-bottom: 1.5rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        transition: transform 0.2s ease;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        transition: transform 0.3s ease;
       }
       
       .ride-card:hover {
-        transform: translateY(-2px);
+        transform: translateY(-5px);
       }
       
       .ride-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 1.2rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 2px solid #f1f3f5;
       }
       
       .route-info {
         display: flex;
         align-items: center;
         gap: 1rem;
-        font-size: 1.2rem;
+        font-size: 1.3rem;
         font-weight: 600;
         color: #2d3436;
       }
       
       .price {
-        font-size: 1.3rem;
+        font-size: 1.4rem;
         font-weight: 700;
         color: #FF8C00;
+        background: rgba(255,140,0,0.1);
+        padding: 0.5rem 1.5rem;
+        border-radius: 50px;
       }
       
       .ride-details {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1.5rem;
         margin-bottom: 1.5rem;
       }
       
       .detail-item {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.8rem;
         color: #636e72;
       }
       
@@ -149,79 +157,103 @@
         background: #25D366;
         color: white;
         border: none;
-        border-radius: 10px;
-        font-size: 1.1rem;
+        border-radius: 12px;
+        font-size: 1.2rem;
         font-weight: 600;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 0.5rem;
+        gap: 0.8rem;
         transition: all 0.3s ease;
       }
       
       .contact-btn:hover {
         background: #128C7E;
+        transform: translateY(-2px);
       }
       
       .no-results {
         text-align: center;
-        padding: 3rem;
+        padding: 4rem 2rem;
         background: white;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
       }
       
       .no-results i {
-        font-size: 3rem;
+        font-size: 4rem;
         color: #FF8C00;
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem;
       }
       
       .no-results h3 {
-        font-size: 1.5rem;
+        font-size: 1.8rem;
         color: #2d3436;
         margin-bottom: 1rem;
       }
       
       .no-results p {
         color: #636e72;
-        margin-bottom: 1.5rem;
+        margin-bottom: 2rem;
+        font-size: 1.1rem;
+        line-height: 1.6;
       }
       
-      .suggest-ride-btn {
-        background: #FF8C00;
+      .suggest-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: linear-gradient(135deg, #FF8C00, #FFA500);
         color: white;
         border: none;
-        border-radius: 10px;
+        border-radius: 12px;
         padding: 1rem 2rem;
         font-size: 1.1rem;
         font-weight: 600;
         cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
         transition: all 0.3s ease;
       }
       
-      .suggest-ride-btn:hover {
-        background: #FFA500;
+      .suggest-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(255,140,0,0.2);
+      }
+      
+      .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #2d3436;
+        text-decoration: none;
+        font-weight: 500;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+      }
+      
+      .back-btn:hover {
+        color: #FF8C00;
       }
       
       @media (max-width: 768px) {
-        .search-details {
+        .ride-header {
           flex-direction: column;
+          text-align: center;
           gap: 1rem;
         }
         
-        .ride-header {
+        .route-info {
           flex-direction: column;
-          align-items: flex-start;
-          gap: 1rem;
+          gap: 0.5rem;
         }
         
         .price {
-          align-self: flex-end;
+          width: 100%;
+          text-align: center;
+        }
+        
+        .summary-details {
+          grid-template-columns: 1fr;
         }
       }
     </style>
@@ -234,54 +266,54 @@
     </nav>
 
     <main class="main-content">
+      <a href="search-ride.html" class="back-btn">
+        <i class="fas fa-arrow-right"></i>
+        عودة إلى البحث
+      </a>
+
       <div class="search-summary">
         <h2>نتائج البحث</h2>
-        <div class="search-details">
-          <div class="search-detail">
+        <div class="summary-details">
+          <div class="summary-item">
             <i class="fas fa-map-marker-alt"></i>
-            <span id="fromText"></span>
+            <span id="fromText">...</span>
           </div>
-          <div class="search-detail">
-            <i class="fas fa-arrow-left"></i>
-          </div>
-          <div class="search-detail">
+          <div class="summary-item">
             <i class="fas fa-map-marker"></i>
-            <span id="toText"></span>
+            <span id="toText">...</span>
           </div>
-          <div class="search-detail">
+          <div class="summary-item">
             <i class="fas fa-calendar"></i>
-            <span id="dateText"></span>
+            <span id="dateText">...</span>
           </div>
-          <div class="search-detail">
+          <div class="summary-item">
             <i class="fas fa-users"></i>
-            <span id="seatsText"></span>
+            <span id="seatsText">...</span>
           </div>
         </div>
       </div>
 
-      <div id="searchResults" class="results-container">
-        <!-- Results will be added here -->
+      <div id="searchResults">
+        <!-- Results will be dynamically added here -->
       </div>
     </main>
 
     <script>
       // Get search parameters from URL
-      const urlParams = new URLSearchParams(window.location.search);
-      const from = urlParams.get('from');
-      const to = urlParams.get('to');
-      const date = urlParams.get('date');
-      const seatsNeeded = parseInt(urlParams.get('seats'));
-      
+      const params = new URLSearchParams(window.location.search);
+      const from = params.get('from');
+      const to = params.get('to');
+      const date = params.get('date');
+      const seats = params.get('seats');
+
       // Update search summary
-      document.getElementById('fromText').textContent = from;
-      document.getElementById('toText').textContent = to;
-      document.getElementById('dateText').textContent = formatDate(date);
-      document.getElementById('seatsText').textContent = seatsNeeded + ' مقاعد';
-      
-      // Get published rides from localStorage
+      document.getElementById('fromText').textContent = from || 'غير محدد';
+      document.getElementById('toText').textContent = to || 'غير محدد';
+      document.getElementById('dateText').textContent = formatDate(date) || 'غير محدد';
+      document.getElementById('seatsText').textContent = seats ? seats + ' مقاعد' : 'غير محدد';
+
+      // Search for matching rides
       const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-      
-      // Filter matching rides
       const matchingRides = rides.filter(ride => {
         const rideDate = new Date(ride.date);
         const searchDate = new Date(date);
@@ -292,10 +324,11 @@
           ride.from.toLowerCase().includes(from.toLowerCase()) &&
           ride.to.toLowerCase().includes(to.toLowerCase()) &&
           rideDate.getTime() === searchDate.getTime() &&
-          parseInt(ride.seats) >= seatsNeeded
+          parseInt(ride.seats) >= parseInt(seats)
         );
       });
 
+      // Display results
       const resultsContainer = document.getElementById('searchResults');
       
       if (matchingRides.length === 0) {
@@ -304,14 +337,13 @@
             <i class="fas fa-search"></i>
             <h3>لا توجد رحلات متاحة</h3>
             <p>لم نجد رحلات متاحة في هذا المسار والتاريخ. يمكنك نشر طلب رحلة وسيتواصل معك السائقون المتجهون لنفس الوجهة.</p>
-            <button onclick="suggestRide()" class="suggest-ride-btn">
+            <button onclick="suggestRide()" class="suggest-btn">
               <i class="fas fa-plus"></i>
               نشر طلب رحلة
             </button>
           </div>
         `;
       } else {
-        // Display matching rides
         resultsContainer.innerHTML = matchingRides.map(ride => `
           <div class="ride-card">
             <div class="ride-header">
@@ -336,7 +368,7 @@
               </div>
               <div class="detail-item">
                 <i class="fas fa-car"></i>
-                <span>${ride.carType}</span>
+                <span>${ride.carType === 'suv' ? 'دفع رباعي' : 'صالون'}</span>
               </div>
               <div class="detail-item">
                 <i class="fas fa-users"></i>
@@ -344,7 +376,7 @@
               </div>
             </div>
 
-            <button onclick="contactDriver('${ride.phone}', '${ride.from}', '${ride.to}', '${ride.date}', ${seatsNeeded})" class="contact-btn">
+            <button onclick="contactDriver('${ride.phone}', '${ride.from}', '${ride.to}', '${ride.date}', ${seats})" class="contact-btn">
               <i class="fab fa-whatsapp"></i>
               تواصل مع السائق
             </button>
@@ -353,17 +385,23 @@
       }
 
       function formatDate(dateStr) {
+        if (!dateStr) return '';
         const options = { year: 'numeric', month: 'long', day: 'numeric' };
         return new Date(dateStr).toLocaleDateString('ar-IQ', options);
       }
 
       function formatPhone(phone) {
         // Remove any non-digit characters
-        const digits = phone.replace(/\D/g, '');
+        let digits = phone.replace(/\D/g, '');
         
         // If the number starts with 0, replace it with 964
         if (digits.startsWith('0')) {
-          return '964' + digits.slice(1);
+          digits = '964' + digits.slice(1);
+        }
+        
+        // If the number doesn't start with 964, add it
+        if (!digits.startsWith('964')) {
+          digits = '964' + digits;
         }
         
         return digits;
@@ -381,17 +419,17 @@
       }
 
       function suggestRide() {
-        // Store search details in localStorage
-        const searchDetails = {
+        // Store search criteria in localStorage
+        const searchCriteria = {
           from: from,
           to: to,
           date: date,
-          seats: seatsNeeded
+          seats: seats
         };
-        localStorage.setItem('lastSearch', JSON.stringify(searchDetails));
+        localStorage.setItem('lastSearchCriteria', JSON.stringify(searchCriteria));
         
-        // Redirect to search-ride.html
-        window.location.href = 'search-ride.html#suggest';
+        // Redirect to publish ride page
+        window.location.href = 'publish-ride.html?type=request';
       }
     </script>
   </body>

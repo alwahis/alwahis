@@ -205,58 +205,33 @@
         box-shadow: 0 6px 20px rgba(255,140,0,0.3);
       }
       
-      @media (max-width: 768px) {
-        .hero h1 {
-          font-size: 2.5rem;
-        }
-        
-        .hero p {
-          font-size: 1.2rem;
-        }
-        
-        .option-card {
-          padding: 2rem 1.5rem;
-        }
+      .footer {
+        background: #2d3436;
+        color: white;
+        padding: 2rem 0;
+        margin-top: auto;
       }
       
-      .footer {
-        background: #f8f9fa;
-        padding: 1rem 0;
-        margin-top: 2rem;
-        box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
-      }
-
       .footer-content {
         max-width: 1200px;
         margin: 0 auto;
         padding: 0 1rem;
+        text-align: center;
       }
-
-      .support-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        background: #FF8C00;
-        color: white;
-        padding: 0.8rem 1.5rem;
-        border-radius: 8px;
+      
+      .footer p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #b2bec3;
+      }
+      
+      .footer a {
+        color: #FF8C00;
         text-decoration: none;
-        font-weight: 500;
-        transition: all 0.3s ease;
       }
-
-      .support-link:hover {
-        background: #ff9f1a;
-        transform: translateY(-2px);
-      }
-
-      .support-link i {
-        font-size: 1.2rem;
-      }
-
-      /* Remove fixed footer margin */
-      .container {
-        margin-bottom: 0;
+      
+      .footer a:hover {
+        text-decoration: underline;
       }
     </style>
   </head>
@@ -266,41 +241,38 @@
         <div class="logo">عالواهس</div>
         <div class="nav-links">
           <a href="index.html" class="active">الرئيسية</a>
-          <a href="publish-ride.html">نشر رحلة</a>
-          <a href="my-rides.html">رحلاتي</a>
+          <a href="search-ride.html">ابحث عن رحلة</a>
+          <a href="publish-ride.html">انشر رحلة</a>
         </div>
       </div>
     </nav>
-    
+
     <main class="main-content">
-      <section class="hero">
-        <h1>أهلاً بك في عالواهس</h1>
-        <p>وسيلتك الأمثل للتنقل بين المدن العراقية</p>
-      </section>
-      
+      <div class="hero">
+        <h1>خدمة توصيل مشترك بين المدن العراقية</h1>
+        <p>احجز رحلتك او انشر رحلة للتوصيل المشترك بين المدن العراقية</p>
+      </div>
+
       <div class="options">
         <div class="option-card">
-          <div class="option-icon">🔍</div>
+          <div class="option-icon">🚗</div>
           <h2>ابحث عن رحلة</h2>
-          <p>اعثر على رحلتك المثالية بين المدن العراقية بأفضل الأسعار</p>
+          <p>ابحث عن رحلات متوفرة في مسارك وتواصل مع السائق مباشرة</p>
           <a href="search-ride.html" class="btn">ابحث الآن</a>
         </div>
-        
+
         <div class="option-card">
-          <div class="option-icon">🚘</div>
-          <h2>أنشر رحلتك</h2>
-          <p>شارك رحلتك مع المسافرين واكسب دخلاً إضافياً</p>
-          <a href="publish-ride.html" class="btn">أنشر رحلة</a>
+          <div class="option-icon">📝</div>
+          <h2>انشر رحلة</h2>
+          <p>انشر رحلتك واعرض مقاعدك الشاغرة للحجز</p>
+          <a href="publish-ride.html" class="btn">انشر رحلة</a>
         </div>
       </div>
     </main>
-    
+
     <footer class="footer">
       <div class="footer-content">
-        <a href="chat.html" class="support-link">
-          <i class="fas fa-headset"></i>
-          الدعم الفني
-        </a>
+        <p>جميع الحقوق محفوظة © ٢٠٢٥ عالواهس</p>
       </div>
     </footer>
   </body>
