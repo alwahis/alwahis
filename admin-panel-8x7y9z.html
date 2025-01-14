@@ -493,6 +493,10 @@
         <h3>عدد السائقين</h3>
         <div id="driversCount" class="value">0</div>
       </div>
+      <div class="stat-card">
+        <h3>عدد السائقين المحظورين</h3>
+        <div id="blockedCount" class="value">0</div>
+      </div>
     </div>
 
     <div class="tabs">
@@ -579,6 +583,7 @@
               <th>عدد الرحلات</th>
               <th>الرحلات النشطة</th>
               <th>الرحلات الملغية</th>
+              <th>أخر رحلة</th>
               <th>النقاط</th>
               <th>إجراءات</th>
             </tr>
@@ -613,435 +618,510 @@
     // The actual password hash (using SHA-256)
     const ADMIN_PASSWORD_HASH = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'; // This is the hash of 'password'
 
-    // Check if already logged in
+    // Check if already logged in and session is still valid
     document.addEventListener('DOMContentLoaded', function() {
       const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
-      if (isLoggedIn) {
+      const loginTime = parseInt(localStorage.getItem('adminLoginTime') || '0');
+      const currentTime = new Date().getTime();
+      
+      // Session expires after 24 hours
+      if (isLoggedIn && (currentTime - loginTime) < 24 * 60 * 60 * 1000) {
         showAdminPanel();
+      } else {
+        logout(); // Clear expired session
       }
     });
 
     async function login(event) {
       event.preventDefault();
       
-      const password = document.getElementById('password').value;
-      const hash = await sha256(password);
-      
-      if (hash === ADMIN_PASSWORD_HASH) {
-        localStorage.setItem('adminLoggedIn', 'true');
-        showAdminPanel();
-      } else {
-        alert('كلمة المرور غير صحيحة');
+      try {
+        const password = document.getElementById('password').value;
+        const hash = await sha256(password);
+        
+        if (hash === ADMIN_PASSWORD_HASH) {
+          localStorage.setItem('adminLoggedIn', 'true');
+          localStorage.setItem('adminLoginTime', new Date().getTime().toString());
+          showAdminPanel();
+        } else {
+          alert('كلمة المرور غير صحيحة');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        alert('حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.');
       }
     }
 
     function logout() {
       localStorage.removeItem('adminLoggedIn');
+      localStorage.removeItem('adminLoginTime');
       document.getElementById('loginContainer').style.display = 'flex';
       document.getElementById('adminContainer').style.display = 'none';
     }
 
     function showAdminPanel() {
-      document.getElementById('loginContainer').style.display = 'none';
-      document.getElementById('adminContainer').style.display = 'block';
-      loadRides();
-      updateStats();
+      try {
+        document.getElementById('loginContainer').style.display = 'none';
+        document.getElementById('adminContainer').style.display = 'block';
+        loadRides();
+        loadRequests();
+        loadDrivers();
+        updateStats();
+        showTab('rides'); // Show rides tab by default
+      } catch (error) {
+        console.error('Error showing admin panel:', error);
+        alert('حدث خطأ أثناء تحميل لوحة التحكم. يرجى تحديث الصفحة.');
+      }
     }
 
     function loadRides() {
-      const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-      const tableBody = document.getElementById('ridesTableBody');
-      
-      // Sort rides by date (newest first)
-      rides.sort((a, b) => new Date(b.rawDateTime) - new Date(a.rawDateTime));
-      
-      tableBody.innerHTML = rides.map(ride => `
-        <tr>
-          <td>${formatDate(ride.date)} ${ride.time}</td>
-          <td>${ride.from}</td>
-          <td>${ride.to}</td>
-          <td>${ride.phone}</td>
-          <td>${ride.price} د.ع</td>
-          <td>${ride.seats}</td>
-          <td>
-            <span class="status ${ride.cancelled ? 'status-cancelled' : 'status-active'}">
-              ${ride.cancelled ? 'ملغية' : 'نشطة'}
-            </span>
-          </td>
-          <td>
-            <button class="delete-btn" onclick="deleteRide('${ride.id}')">
-              حذف
-            </button>
-          </td>
-        </tr>
-      `).join('');
+      try {
+        const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+        const tableBody = document.getElementById('ridesTableBody');
+        
+        // Sort rides by date (newest first)
+        rides.sort((a, b) => new Date(b.rawDateTime) - new Date(a.rawDateTime));
+        
+        tableBody.innerHTML = rides.map(ride => `
+          <tr>
+            <td>${formatDate(ride.date)} ${ride.time}</td>
+            <td>${ride.from}</td>
+            <td>${ride.to}</td>
+            <td>${ride.phone}</td>
+            <td>${ride.price} د.ع</td>
+            <td>${ride.seats}</td>
+            <td>
+              <span class="status ${ride.cancelled ? 'status-cancelled' : 'status-active'}">
+                ${ride.cancelled ? 'ملغية' : 'نشطة'}
+              </span>
+            </td>
+            <td>
+              <button class="delete-btn" onclick="deleteRide('${ride.id}')">
+                حذف
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading rides:', error);
+        alert('حدث خطأ أثناء تحميل الرحلات. يرجى تحديث الصفحة.');
+      }
     }
 
     function updateStats() {
-      const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-      const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
-      
-      const activeRides = rides.filter(ride => !ride.cancelled).length;
-      const cancelledRides = rides.filter(ride => ride.cancelled).length;
-      const uniqueDrivers = new Set(rides.map(ride => ride.phone)).size;
-      
-      document.getElementById('activeRidesCount').textContent = activeRides;
-      document.getElementById('cancelledRidesCount').textContent = cancelledRides;
-      document.getElementById('requestsCount').textContent = requests.length;
-      document.getElementById('driversCount').textContent = uniqueDrivers;
+      try {
+        const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+        const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
+        const blockedDrivers = JSON.parse(localStorage.getItem('blockedDrivers') || '[]');
+        
+        const activeRides = rides.filter(ride => !ride.cancelled).length;
+        const cancelledRides = rides.filter(ride => ride.cancelled).length;
+        const uniqueDrivers = new Set(rides.map(ride => ride.phone)).size;
+        const blockedCount = blockedDrivers.length;
+        
+        document.getElementById('activeRidesCount').textContent = activeRides;
+        document.getElementById('cancelledRidesCount').textContent = cancelledRides;
+        document.getElementById('requestsCount').textContent = requests.length;
+        document.getElementById('driversCount').textContent = uniqueDrivers;
+        document.getElementById('blockedCount').textContent = blockedCount;
+      } catch (error) {
+        console.error('Error updating stats:', error);
+      }
     }
 
     function deleteRide(rideId) {
-      if (!confirm('هل أنت متأكد من حذف هذه الرحلة؟')) {
-        return;
-      }
+      try {
+        if (!confirm('هل أنت متأكد من حذف هذه الرحلة؟')) {
+          return;
+        }
 
-      const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-      const updatedRides = rides.filter(ride => ride.id !== rideId);
-      localStorage.setItem('publishedRides', JSON.stringify(updatedRides));
-      
-      loadRides();
-      updateStats();
-    }
-
-    function showTab(tabName) {
-      // Hide all tabs
-      document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.remove('active');
-      });
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-      });
-
-      // Show selected tab
-      document.getElementById(tabName + 'Tab').classList.add('active');
-      document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
-
-      // Load data
-      if (tabName === 'rides') {
+        const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+        const updatedRides = rides.filter(ride => ride.id !== rideId);
+        localStorage.setItem('publishedRides', JSON.stringify(updatedRides));
+        
         loadRides();
-      } else if (tabName === 'requests') {
-        loadRequests();
-      } else if (tabName === 'drivers') {
-        loadDrivers();
-      } else if (tabName === 'chat') {
-        loadChats();
+        updateStats();
+      } catch (error) {
+        console.error('Error deleting ride:', error);
+        alert('حدث خطأ أثناء حذف الرحلة. يرجى المحاولة مرة أخرى.');
       }
     }
 
     function loadRequests() {
-      const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
-      const tableBody = document.getElementById('requestsTableBody');
-      
-      tableBody.innerHTML = requests.map(request => `
-        <tr>
-          <td>${request.date}</td>
-          <td>${request.from}</td>
-          <td>${request.to}</td>
-          <td>${request.phone}</td>
-          <td>${request.seats}</td>
-          <td>${request.fullCar ? 'سيارة كاملة' : 'مقاعد'}</td>
-          <td>
-            <button class="delete-btn" onclick="deleteRequest('${request.id}')">
-              حذف
-            </button>
-          </td>
-        </tr>
-      `).join('');
+      try {
+        const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
+        const tableBody = document.getElementById('requestsTableBody');
+        
+        requests.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        tableBody.innerHTML = requests.map(request => `
+          <tr>
+            <td>${formatDate(request.date)}</td>
+            <td>${request.from}</td>
+            <td>${request.to}</td>
+            <td>${request.phone}</td>
+            <td>${request.seats}</td>
+            <td>
+              <button class="delete-btn" onclick="deleteRequest('${request.id}')">
+                حذف
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading requests:', error);
+        alert('حدث خطأ أثناء تحميل الطلبات. يرجى تحديث الصفحة.');
+      }
     }
 
     function loadDrivers() {
-      const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-      const blockedDrivers = JSON.parse(localStorage.getItem('blockedDrivers') || '[]');
-      const driverPoints = JSON.parse(localStorage.getItem('driverPoints') || '{}');
-      const drivers = {};
-
-      // Group rides by driver
-      rides.forEach(ride => {
-        if (!drivers[ride.phone]) {
-          drivers[ride.phone] = {
-            phone: ride.phone,
-            totalRides: 0,
-            activeRides: 0,
-            cancelledRides: 0,
-            isBlocked: blockedDrivers.includes(ride.phone),
-            points: driverPoints[ride.phone] || 10
-          };
-        }
-        drivers[ride.phone].totalRides++;
-        if (ride.cancelled) {
-          drivers[ride.phone].cancelledRides++;
-        } else {
-          drivers[ride.phone].activeRides++;
-        }
-      });
-
-      const tableBody = document.getElementById('driversTableBody');
-      tableBody.innerHTML = Object.values(drivers).map(driver => `
-        <tr>
-          <td>${driver.phone}</td>
-          <td>${driver.totalRides}</td>
-          <td>${driver.activeRides}</td>
-          <td>${driver.cancelledRides}</td>
-          <td>
-            <div class="points-control">
-              <span class="points-label">النقاط: </span>
-              <input type="number" class="points-input" value="${driver.points}" 
-                     min="0" max="100" onchange="updatePoints('${driver.phone}', this.value)">
-            </div>
-          </td>
-          <td>
-            <span class="${driver.isBlocked ? 'status-blocked' : ''}" style="margin-left: 10px">
-              ${driver.isBlocked ? 'محظور' : ''}
-            </span>
-            <button class="block-btn ${driver.isBlocked ? 'blocked' : ''}" 
-                    onclick="toggleBlockDriver('${driver.phone}')">
-              ${driver.isBlocked ? 'إلغاء الحظر' : 'حظر'}
-            </button>
-          </td>
-        </tr>
-      `).join('');
+      try {
+        const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+        const blockedDrivers = JSON.parse(localStorage.getItem('blockedDrivers') || '[]');
+        const driverPoints = JSON.parse(localStorage.getItem('driverPoints') || '{}');
+        
+        // Get unique drivers with their ride counts
+        const driverStats = {};
+        rides.forEach(ride => {
+          if (!driverStats[ride.phone]) {
+            driverStats[ride.phone] = {
+              totalRides: 0,
+              activeRides: 0,
+              cancelledRides: 0,
+              lastRide: null,
+              points: driverPoints[ride.phone] || 0,
+              isBlocked: blockedDrivers.includes(ride.phone)
+            };
+          }
+          
+          driverStats[ride.phone].totalRides++;
+          if (ride.cancelled) {
+            driverStats[ride.phone].cancelledRides++;
+          } else {
+            driverStats[ride.phone].activeRides++;
+          }
+          
+          const rideDate = new Date(ride.rawDateTime);
+          if (!driverStats[ride.phone].lastRide || rideDate > new Date(driverStats[ride.phone].lastRide)) {
+            driverStats[ride.phone].lastRide = ride.rawDateTime;
+          }
+        });
+        
+        const tableBody = document.getElementById('driversTableBody');
+        tableBody.innerHTML = Object.entries(driverStats).map(([phone, stats]) => `
+          <tr class="${stats.isBlocked ? 'blocked-driver' : ''}">
+            <td>${phone}</td>
+            <td>${stats.totalRides}</td>
+            <td>${stats.activeRides}</td>
+            <td>${stats.cancelledRides}</td>
+            <td>${formatDate(stats.lastRide)}</td>
+            <td>
+              <input type="number" 
+                     class="points-input" 
+                     value="${stats.points}"
+                     onchange="updatePoints('${phone}', this.value)"
+                     min="0"
+                     max="100">
+            </td>
+            <td>
+              <button 
+                class="block-btn ${stats.isBlocked ? 'unblock' : 'block'}" 
+                onclick="toggleBlockDriver('${phone}')">
+                ${stats.isBlocked ? 'فك الحظر' : 'حظر'}
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading drivers:', error);
+        alert('حدث خطأ أثناء تحميل بيانات السائقين. يرجى تحديث الصفحة.');
+      }
     }
 
     function updatePoints(phone, points) {
-      points = parseInt(points);
-      if (isNaN(points) || points < 0) points = 0;
-      if (points > 100) points = 100;
-
-      const driverPoints = JSON.parse(localStorage.getItem('driverPoints') || '{}');
-      driverPoints[phone] = points;
-      localStorage.setItem('driverPoints', JSON.stringify(driverPoints));
-      
-      alert(`تم تحديث نقاط السائق إلى ${points} نقطة`);
+      try {
+        const driverPoints = JSON.parse(localStorage.getItem('driverPoints') || '{}');
+        driverPoints[phone] = parseInt(points) || 0;
+        localStorage.setItem('driverPoints', JSON.stringify(driverPoints));
+        loadDrivers();
+      } catch (error) {
+        console.error('Error updating points:', error);
+        alert('حدث خطأ أثناء تحديث النقاط. يرجى المحاولة مرة أخرى.');
+      }
     }
 
     function deleteRequest(requestId) {
-      if (!confirm('هل أنت متأكد من حذف هذا الطلب؟')) {
-        return;
-      }
+      try {
+        if (!confirm('هل أنت متأكد من حذف هذا الطلب؟')) {
+          return;
+        }
 
-      const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
-      const updatedRequests = requests.filter(request => request.id !== requestId);
-      localStorage.setItem('rideRequests', JSON.stringify(updatedRequests));
-      
-      loadRequests();
-      updateStats();
+        const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
+        const updatedRequests = requests.filter(request => request.id !== requestId);
+        localStorage.setItem('rideRequests', JSON.stringify(updatedRequests));
+        
+        loadRequests();
+        updateStats();
+      } catch (error) {
+        console.error('Error deleting request:', error);
+        alert('حدث خطأ أثناء حذف الطلب. يرجى المحاولة مرة أخرى.');
+      }
     }
 
     function toggleBlockDriver(phone) {
-      const blockedDrivers = JSON.parse(localStorage.getItem('blockedDrivers') || '[]');
-      const isBlocked = blockedDrivers.includes(phone);
-      
-      if (isBlocked) {
-        // Unblock driver
-        const updatedBlockedDrivers = blockedDrivers.filter(p => p !== phone);
-        localStorage.setItem('blockedDrivers', JSON.stringify(updatedBlockedDrivers));
-        alert('تم إلغاء حظر السائق بنجاح');
-      } else {
-        // Block driver
-        if (confirm('هل أنت متأكد من حظر هذا السائق؟')) {
-          blockedDrivers.push(phone);
-          localStorage.setItem('blockedDrivers', JSON.stringify(blockedDrivers));
-          
-          // Cancel all active rides for this driver
-          const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-          const updatedRides = rides.map(ride => {
-            if (ride.phone === phone && !ride.cancelled) {
-              return { ...ride, cancelled: true };
-            }
-            return ride;
-          });
-          localStorage.setItem('publishedRides', JSON.stringify(updatedRides));
-          
-          alert('تم حظر السائق وإلغاء جميع رحلاته النشطة');
+      try {
+        const blockedDrivers = JSON.parse(localStorage.getItem('blockedDrivers') || '[]');
+        const isBlocked = blockedDrivers.includes(phone);
+        
+        if (isBlocked) {
+          // Unblock driver
+          const updatedBlockedDrivers = blockedDrivers.filter(p => p !== phone);
+          localStorage.setItem('blockedDrivers', JSON.stringify(updatedBlockedDrivers));
+        } else {
+          // Block driver
+          if (confirm(`هل أنت متأكد من حظر السائق برقم ${phone}؟`)) {
+            blockedDrivers.push(phone);
+            localStorage.setItem('blockedDrivers', JSON.stringify(blockedDrivers));
+            
+            // Cancel all active rides for this driver
+            const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+            const updatedRides = rides.map(ride => {
+              if (ride.phone === phone && !ride.cancelled) {
+                return { ...ride, cancelled: true };
+              }
+              return ride;
+            });
+            localStorage.setItem('publishedRides', JSON.stringify(updatedRides));
+          }
         }
-      }
-      
-      // Refresh the drivers table
-      loadDrivers();
-      // Refresh the rides table if we're on that tab
-      if (document.getElementById('ridesTab').classList.contains('active')) {
+        
+        loadDrivers();
         loadRides();
+        updateStats();
+      } catch (error) {
+        console.error('Error toggling driver block status:', error);
+        alert('حدث خطأ أثناء تحديث حالة الحظر. يرجى المحاولة مرة أخرى.');
+      }
+    }
+
+    function showTab(tabName) {
+      try {
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(tab => {
+          tab.classList.remove('active');
+        });
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+          btn.classList.remove('active');
+        });
+
+        // Show selected tab
+        document.getElementById(tabName + 'Tab').classList.add('active');
+        document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
+
+        // Load data
+        if (tabName === 'rides') {
+          loadRides();
+        } else if (tabName === 'requests') {
+          loadRequests();
+        } else if (tabName === 'drivers') {
+          loadDrivers();
+        } else if (tabName === 'chat') {
+          loadChats();
+        }
+      } catch (error) {
+        console.error('Error switching tabs:', error);
+        alert('حدث خطأ أثناء تحميل البيانات. يرجى تحديث الصفحة.');
       }
     }
 
     function loadChats() {
-      const messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
-      const chatsBySession = {};
-
-      // Group messages by session
-      messages.forEach(message => {
-        if (!chatsBySession[message.sessionId]) {
-          chatsBySession[message.sessionId] = [];
-        }
-        chatsBySession[message.sessionId].push(message);
-      });
-
-      // Sort chats by latest message
-      const sortedChats = Object.entries(chatsBySession)
-        .sort(([,a], [,b]) => {
-          const lastA = a[a.length - 1].timestamp;
-          const lastB = b[b.length - 1].timestamp;
-          return new Date(lastB) - new Date(lastA);
-        });
-
-      const chatsList = document.getElementById('chatsList');
-      chatsList.innerHTML = sortedChats.map(([sessionId, messages]) => {
-        const lastMessage = messages[messages.length - 1];
-        const time = new Date(lastMessage.timestamp).toLocaleTimeString('ar-IQ');
+      try {
+        const chats = JSON.parse(localStorage.getItem('chatSessions') || '[]');
+        const chatsList = document.getElementById('chatsList');
         
-        return `
-          <div class="chat-item" onclick="showChat('${sessionId}')">
-            <div class="chat-item-header">
-              <div class="chat-item-phone">محادثة ${sessionId.replace('user_', '#')}</div>
-              <div class="chat-item-time">${time}</div>
+        if (chats.length === 0) {
+          chatsList.innerHTML = '<div class="no-chats">لا توجد محادثات</div>';
+          return;
+        }
+        
+        // Sort chats by last message time
+        chats.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+        
+        chatsList.innerHTML = chats.map(chat => `
+          <div class="chat-item ${chat.unread ? 'unread' : ''}" onclick="showChat('${chat.sessionId}')">
+            <div class="chat-info">
+              <div class="chat-name">${chat.phone}</div>
+              <div class="chat-preview">${chat.lastMessage}</div>
             </div>
-            <div class="chat-item-preview">
-              ${lastMessage.text || 'مرفق'}
-            </div>
+            <div class="chat-time">${formatDate(chat.lastMessageTime)}</div>
           </div>
-        `;
-      }).join('');
+        `).join('');
+      } catch (error) {
+        console.error('Error loading chats:', error);
+        alert('حدث خطأ أثناء تحميل المحادثات. يرجى تحديث الصفحة.');
+      }
     }
 
     function showChat(sessionId) {
-      const messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
-      const sessionMessages = messages.filter(m => m.sessionId === sessionId);
-      
-      const chatMessages = document.getElementById('chatMessages');
-      chatMessages.innerHTML = `
-        <div class="chat-messages-container">
-          ${sessionMessages.map(message => `
-            <div class="message ${message.sender === 'admin' ? 'admin' : 'user'}">
-              <div class="message-text">${message.text || ''}</div>
-              ${createAttachmentElement(message)}
-              <div class="message-time">
-                ${new Date(message.timestamp).toLocaleTimeString('ar-IQ')}
+      try {
+        const chats = JSON.parse(localStorage.getItem('chatSessions') || '[]');
+        const chat = chats.find(c => c.sessionId === sessionId);
+        
+        if (!chat) {
+          alert('المحادثة غير موجودة');
+          return;
+        }
+        
+        const messagesContainer = document.getElementById('chatMessages');
+        messagesContainer.innerHTML = `
+          <div class="chat-header">
+            <div class="chat-contact">${chat.phone}</div>
+          </div>
+          <div class="messages-list">
+            ${chat.messages.map(msg => `
+              <div class="message ${msg.isAdmin ? 'admin' : 'user'}">
+                <div class="message-content">
+                  ${msg.type === 'text' ? msg.content : createAttachmentElement(msg)}
+                </div>
+                <div class="message-time">${formatDate(msg.time)}</div>
               </div>
-            </div>
-          `).join('')}
-        </div>
-        <div class="chat-input">
-          <textarea placeholder="اكتب رسالتك هنا..."></textarea>
-          <button onclick="sendAdminMessage('${sessionId}')">
-            <i class="fas fa-paper-plane"></i>
-          </button>
-        </div>
-      `;
-
-      // Mark chat as active
-      document.querySelectorAll('.chat-item').forEach(item => {
-        item.classList.remove('active');
-      });
-      document.querySelector(`.chat-item[onclick="showChat('${sessionId}')"]`).classList.add('active');
-
-      // Scroll to bottom
-      const container = chatMessages.querySelector('.chat-messages-container');
-      container.scrollTop = container.scrollHeight;
+            `).join('')}
+          </div>
+          <div class="chat-input">
+            <input type="text" id="messageInput" placeholder="اكتب رسالتك هنا...">
+            <button onclick="sendAdminMessage('${sessionId}')">إرسال</button>
+          </div>
+        `;
+        
+        // Mark chat as read
+        if (chat.unread) {
+          chat.unread = false;
+          localStorage.setItem('chatSessions', JSON.stringify(chats));
+          loadChats(); // Refresh chat list
+        }
+        
+        // Scroll to bottom
+        const messagesList = messagesContainer.querySelector('.messages-list');
+        messagesList.scrollTop = messagesList.scrollHeight;
+      } catch (error) {
+        console.error('Error showing chat:', error);
+        alert('حدث خطأ أثناء عرض المحادثة. يرجى المحاولة مرة أخرى.');
+      }
     }
 
     function sendAdminMessage(sessionId) {
-      const input = document.querySelector('.chat-input textarea');
-      const text = input.value.trim();
-      
-      if (!text) return;
-
-      const message = {
-        id: Date.now(),
-        sessionId,
-        sender: 'admin',
-        text,
-        timestamp: new Date().toISOString()
-      };
-
-      const messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
-      messages.push(message);
-      localStorage.setItem('chatMessages', JSON.stringify(messages));
-
-      input.value = '';
-      showChat(sessionId);
-      loadChats();
+      try {
+        const messageInput = document.getElementById('messageInput');
+        const content = messageInput.value.trim();
+        
+        if (!content) return;
+        
+        const chats = JSON.parse(localStorage.getItem('chatSessions') || '[]');
+        const chatIndex = chats.findIndex(c => c.sessionId === sessionId);
+        
+        if (chatIndex === -1) {
+          alert('المحادثة غير موجودة');
+          return;
+        }
+        
+        const message = {
+          type: 'text',
+          content,
+          isAdmin: true,
+          time: new Date().toISOString()
+        };
+        
+        chats[chatIndex].messages.push(message);
+        chats[chatIndex].lastMessage = content;
+        chats[chatIndex].lastMessageTime = message.time;
+        
+        localStorage.setItem('chatSessions', JSON.stringify(chats));
+        messageInput.value = '';
+        
+        showChat(sessionId); // Refresh chat
+        loadChats(); // Refresh chat list
+      } catch (error) {
+        console.error('Error sending message:', error);
+        alert('حدث خطأ أثناء إرسال الرسالة. يرجى المحاولة مرة أخرى.');
+      }
     }
 
     function filterChats() {
-      const filter = document.getElementById('chatFilter').value;
-      const search = document.getElementById('chatSearch').value.toLowerCase();
-      
-      const messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
-      const chatsBySession = {};
-
-      // Group messages by session
-      messages.forEach(message => {
-        if (!chatsBySession[message.sessionId]) {
-          chatsBySession[message.sessionId] = [];
-        }
-        chatsBySession[message.sessionId].push(message);
-      });
-
-      // Filter chats
-      const filteredChats = Object.entries(chatsBySession)
-        .filter(([sessionId, messages]) => {
-          if (!sessionId.includes(search)) return false;
-          return true;
-        })
-        .sort(([,a], [,b]) => {
-          const lastA = a[a.length - 1].timestamp;
-          const lastB = b[b.length - 1].timestamp;
-          return new Date(lastB) - new Date(lastA);
-        });
-
-      const chatsList = document.getElementById('chatsList');
-      chatsList.innerHTML = filteredChats.map(([sessionId, messages]) => {
-        const lastMessage = messages[messages.length - 1];
-        const time = new Date(lastMessage.timestamp).toLocaleTimeString('ar-IQ');
+      try {
+        const searchInput = document.getElementById('chatSearch');
+        const searchTerm = searchInput.value.toLowerCase();
+        const chats = JSON.parse(localStorage.getItem('chatSessions') || '[]');
+        const chatsList = document.getElementById('chatsList');
         
-        return `
-          <div class="chat-item" onclick="showChat('${sessionId}')">
-            <div class="chat-item-header">
-              <div class="chat-item-phone">محادثة ${sessionId.replace('user_', '#')}</div>
-              <div class="chat-item-time">${time}</div>
+        const filteredChats = chats.filter(chat => 
+          chat.phone.toLowerCase().includes(searchTerm) ||
+          chat.messages.some(msg => msg.content.toLowerCase().includes(searchTerm))
+        );
+        
+        if (filteredChats.length === 0) {
+          chatsList.innerHTML = '<div class="no-chats">لا توجد نتائج</div>';
+          return;
+        }
+        
+        chatsList.innerHTML = filteredChats.map(chat => `
+          <div class="chat-item ${chat.unread ? 'unread' : ''}" onclick="showChat('${chat.sessionId}')">
+            <div class="chat-info">
+              <div class="chat-name">${chat.phone}</div>
+              <div class="chat-preview">${chat.lastMessage}</div>
             </div>
-            <div class="chat-item-preview">
-              ${lastMessage.text || 'مرفق'}
-            </div>
+            <div class="chat-time">${formatDate(chat.lastMessageTime)}</div>
           </div>
-        `;
-      }).join('');
+        `).join('');
+      } catch (error) {
+        console.error('Error filtering chats:', error);
+      }
     }
 
     function createAttachmentElement(message) {
-      if (!message.attachment) return '';
-
-      if (message.attachmentType === 'image') {
-        return `
-          <div class="message-attachment">
-            <img src="${message.attachment}" alt="صورة مرفقة">
-          </div>
-        `;
-      } else if (message.attachmentType === 'audio') {
-        return `
-          <div class="message-attachment">
-            <audio controls src="${message.attachment}"></audio>
-          </div>
-        `;
-      } else if (message.attachmentType === 'file') {
-        return `
-          <div class="message-attachment">
-            <a href="${message.attachment}" download>
-              <i class="fas fa-file"></i> ${message.attachmentName}
-            </a>
-          </div>
-        `;
+      try {
+        switch (message.type) {
+          case 'image':
+            return `<img src="${message.content}" alt="صورة" class="chat-image">`;
+          case 'file':
+            return `
+              <div class="file-attachment">
+                <i class="fas fa-file"></i>
+                <a href="${message.content}" target="_blank" download>
+                  تحميل الملف
+                </a>
+              </div>
+            `;
+          case 'location':
+            return `
+              <div class="location-attachment">
+                <i class="fas fa-map-marker-alt"></i>
+                <a href="https://www.google.com/maps?q=${message.content.lat},${message.content.lng}" 
+                   target="_blank">
+                  عرض الموقع
+                </a>
+              </div>
+            `;
+          default:
+            return message.content;
+        }
+      } catch (error) {
+        console.error('Error creating attachment element:', error);
+        return 'خطأ في عرض المرفق';
       }
-      return '';
     }
 
     function formatDate(dateStr) {
-      const options = { year: 'numeric', month: 'long', day: 'numeric' };
-      return new Date(dateStr).toLocaleDateString('ar-IQ', options);
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      return new Intl.DateTimeFormat('ar-IQ', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit', 
+        minute: '2-digit'
+      }).format(date);
     }
 
-    // SHA-256 hash function
     async function sha256(message) {
       const msgBuffer = new TextEncoder().encode(message);
       const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
