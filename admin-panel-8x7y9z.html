@@ -676,20 +676,30 @@
 
     function loadRides() {
       try {
-        const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+        let rides = localStorage.getItem('publishedRides');
+        if (!rides) {
+          rides = '[]';
+          localStorage.setItem('publishedRides', rides);
+        }
+        rides = JSON.parse(rides);
+        
         const tableBody = document.getElementById('ridesTableBody');
+        if (!tableBody) {
+          console.error('Rides table body element not found');
+          return;
+        }
         
         // Sort rides by date (newest first)
-        rides.sort((a, b) => new Date(b.rawDateTime) - new Date(a.rawDateTime));
+        rides.sort((a, b) => new Date(b.rawDateTime || b.date) - new Date(a.rawDateTime || a.date));
         
         tableBody.innerHTML = rides.map(ride => `
           <tr>
-            <td>${formatDate(ride.date)} ${ride.time}</td>
-            <td>${ride.from}</td>
-            <td>${ride.to}</td>
-            <td>${ride.phone}</td>
-            <td>${ride.price} د.ع</td>
-            <td>${ride.seats}</td>
+            <td>${formatDate(ride.date)} ${ride.time || ''}</td>
+            <td>${ride.from || ''}</td>
+            <td>${ride.to || ''}</td>
+            <td>${ride.phone || ''}</td>
+            <td>${ride.price || 0} د.ع</td>
+            <td>${ride.seats || 1}</td>
             <td>
               <span class="status ${ride.cancelled ? 'status-cancelled' : 'status-active'}">
                 ${ride.cancelled ? 'ملغية' : 'نشطة'}
@@ -702,9 +712,11 @@
             </td>
           </tr>
         `).join('');
+
+        updateStats();
       } catch (error) {
         console.error('Error loading rides:', error);
-        alert('حدث خطأ أثناء تحميل الرحلات. يرجى تحديث الصفحة.');
+        alert('حدث خطأ أثناء تحميل الرحلات. يرجى المحاولة مرة أخرى: ' + error.message);
       }
     }
 
