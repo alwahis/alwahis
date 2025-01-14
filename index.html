@@ -58,9 +58,9 @@
       }
       
       .navbar {
-        background-color: #FF8C00;
-        padding: 1rem 0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        background: linear-gradient(135deg, #FF8C00, #FFA500);
+        padding: 1.5rem 0;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
       }
 
       .navbar-content {
@@ -74,8 +74,16 @@
 
       .logo {
         color: white;
-        font-size: 1.5rem;
+        font-size: 1.8rem;
         font-weight: 700;
+        text-decoration: none;
+      }
+
+      .tagline {
+        color: white;
+        font-size: 1.2rem;
+        font-weight: 500;
+        opacity: 0.95;
       }
 
       .nav-links {
@@ -101,19 +109,6 @@
         background: rgba(255,255,255,0.2);
         font-weight: 600;
       }
-
-      @media (max-width: 768px) {
-        .navbar-content {
-          flex-direction: column;
-          gap: 1rem;
-          text-align: center;
-        }
-
-        .nav-links {
-          flex-wrap: wrap;
-          justify-content: center;
-        }
-      }
       
       .main-content {
         flex: 1;
@@ -121,29 +116,6 @@
         margin: 0 auto;
         padding: 3rem 1rem;
         text-align: center;
-        margin-bottom: 5rem;
-      }
-      
-      .hero {
-        margin-bottom: 4rem;
-        padding: 2rem;
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-      }
-      
-      .hero h1 {
-        font-size: 3rem;
-        color: #2d3436;
-        margin-bottom: 1rem;
-        font-weight: 700;
-      }
-      
-      .hero p {
-        font-size: 1.4rem;
-        color: #636e72;
-        margin-bottom: 2rem;
-        line-height: 1.6;
       }
       
       .options {
@@ -233,14 +205,33 @@
       .footer a:hover {
         text-decoration: underline;
       }
+
+      @media (max-width: 768px) {
+        .navbar-content {
+          flex-direction: column;
+          gap: 1rem;
+          text-align: center;
+          padding: 1rem;
+        }
+
+        .nav-links {
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+
+        .tagline {
+          font-size: 1.1rem;
+          margin: 0.5rem 0;
+        }
+      }
     </style>
   </head>
   <body>
     <nav class="navbar">
       <div class="navbar-content">
-        <div class="logo">عالواهس</div>
+        <a href="index.html" class="logo">عالواهس</a>
+        <div class="tagline">وسيلتك الأمثل للتنقل المشترك بين المدن العراقية بأسعار معقولة</div>
         <div class="nav-links">
-          <a href="index.html" class="active">الرئيسية</a>
           <a href="search-ride.html">ابحث عن رحلة</a>
           <a href="publish-ride.html">انشر رحلة</a>
         </div>
@@ -248,11 +239,6 @@
     </nav>
 
     <main class="main-content">
-      <div class="hero">
-        <h1>خدمة توصيل مشترك بين المدن العراقية</h1>
-        <p>احجز رحلتك او انشر رحلة للتوصيل المشترك بين المدن العراقية</p>
-      </div>
-
       <div class="options">
         <div class="option-card">
           <div class="option-icon">🚗</div>
