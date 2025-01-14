@@ -550,6 +550,91 @@
       .main-content {
         margin-bottom: 0;
       }
+
+      .matching-requests {
+        margin-top: 2rem;
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      .matching-requests h2 {
+        margin-bottom: 1rem;
+        color: #2d3436;
+        font-size: 1.5rem;
+      }
+
+      .request-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      .request-info {
+        display: grid;
+        gap: 0.5rem;
+      }
+
+      .request-route {
+        font-weight: 500;
+        color: #2d3436;
+      }
+
+      .request-details {
+        display: flex;
+        gap: 1rem;
+        color: #636e72;
+        font-size: 0.9rem;
+      }
+
+      .request-contact {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .contact-btn {
+        background: #FF8C00;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        text-decoration: none;
+      }
+
+      .contact-btn:hover {
+        background: #ff9f1a;
+      }
+
+      .no-requests {
+        text-align: center;
+        color: #636e72;
+        padding: 2rem;
+      }
+
+      .no-requests i {
+        font-size: 2rem;
+        color: #b2bec3;
+        margin-bottom: 1rem;
+      }
+
+      @media (max-width: 768px) {
+        .request-card {
+          grid-template-columns: 1fr;
+        }
+
+        .request-contact {
+          justify-content: flex-start;
+        }
+      }
     </style>
   </head>
   <body>
@@ -565,68 +650,75 @@
     </nav>
     
     <main class="main-content">
-      <form class="publish-form" onsubmit="publishRide(event)">
-        <h2>نشر رحلة</h2>
+      <div class="container">
+        <h1>نشر رحلة جديدة</h1>
         
-        <div class="form-group">
-          <label>من أين؟</label>
-          <input type="text" id="fromLocation" class="form-control" placeholder="مثال: بغداد - الكرادة" required>
-        </div>
-        
-        <div class="form-group">
-          <label>إلى أين؟</label>
-          <input type="text" id="toLocation" class="form-control" placeholder="مثال: البصرة - العشار" required>
-        </div>
-        
-        <div class="form-row">
+        <form id="publishForm" onsubmit="publishRide(event)">
           <div class="form-group">
-            <label>تاريخ المغادرة</label>
-            <input type="date" id="departureDate" class="form-control" required min="">
-            <small class="form-text">اختر تاريخ الرحلة</small>
+            <label>من أين؟</label>
+            <input type="text" id="fromLocation" class="form-control" placeholder="مثال: بغداد - الكرادة" required>
           </div>
           
           <div class="form-group">
-            <label>وقت المغادرة</label>
-            <input type="time" id="departureTime" class="form-control" required>
-            <small class="form-text">اختر وقت المغادرة المتوقع</small>
+            <label>إلى أين؟</label>
+            <input type="text" id="toLocation" class="form-control" placeholder="مثال: البصرة - العشار" required>
           </div>
-        </div>
-        
-        <div class="form-group">
-          <label>نوع السيارة</label>
-          <input type="text" id="carType" class="form-control" placeholder="مثال: تويوتا كامري ٢٠٢٣ - أبيض" required>
-        </div>
-        
-        <div class="form-group">
-          <label>عدد المقاعد المتاحة</label>
-          <input type="number" id="availableSeats" class="form-control" min="1" max="7" value="4" required>
-        </div>
-        
-        <div class="form-group">
-          <label>السعر للمقعد الواحد</label>
-          <input type="number" id="pricePerSeat" class="form-control" min="1000" step="1000" value="25000" required>
-        </div>
-        
-        <div class="form-group">
-          <label>صورة السيارة (اختياري)</label>
-          <div class="image-upload-container">
-            <input type="file" id="carImage" class="form-control" accept="image/*" onchange="previewImage(event)">
-            <div id="imagePreview" class="image-preview">
-              <img id="preview" style="display: none;">
-              <div class="upload-placeholder">اختر صورة للسيارة (اختياري)</div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>تاريخ المغادرة</label>
+              <input type="date" id="departureDate" class="form-control" required min="">
+              <small class="form-text">اختر تاريخ الرحلة</small>
+            </div>
+            
+            <div class="form-group">
+              <label>وقت المغادرة</label>
+              <input type="time" id="departureTime" class="form-control" required>
+              <small class="form-text">اختر وقت المغادرة المتوقع</small>
             </div>
           </div>
-          <small class="form-text">يمكنك رفع صورة للسيارة لزيادة الثقة</small>
+          
+          <div class="form-group">
+            <label>نوع السيارة</label>
+            <input type="text" id="carType" class="form-control" placeholder="مثال: تويوتا كامري ٢٠٢٣ - أبيض" required>
+          </div>
+          
+          <div class="form-group">
+            <label>عدد المقاعد المتاحة</label>
+            <input type="number" id="availableSeats" class="form-control" min="1" max="7" value="4" required>
+          </div>
+          
+          <div class="form-group">
+            <label>السعر للمقعد الواحد</label>
+            <input type="number" id="pricePerSeat" class="form-control" min="1000" step="1000" value="25000" required>
+          </div>
+          
+          <div class="form-group">
+            <label>صورة السيارة (اختياري)</label>
+            <div class="image-upload-container">
+              <input type="file" id="carImage" class="form-control" accept="image/*" onchange="previewImage(event)">
+              <div id="imagePreview" class="image-preview">
+                <img id="preview" style="display: none;">
+                <div class="upload-placeholder">اختر صورة للسيارة (اختياري)</div>
+              </div>
+            </div>
+            <small class="form-text">يمكنك رفع صورة للسيارة لزيادة الثقة</small>
+          </div>
+          
+          <div class="form-group">
+            <label>رقم الواتساب العراقي</label>
+            <input type="tel" id="phoneNumber" class="form-control" placeholder="مثال: 07801234567" required>
+            <small class="form-text">أدخل رقم الواتساب العراقي الخاص بك. يجب أن يبدأ الرقم بـ 078 أو 077 أو 075</small>
+          </div>
+          
+          <button type="submit" class="btn">نشر الرحلة</button>
+        </form>
+
+        <div id="matchingRequests" class="matching-requests">
+          <h2>طلبات الركاب المطابقة</h2>
+          <div id="requestsList"></div>
         </div>
-        
-        <div class="form-group">
-          <label>رقم الواتساب العراقي</label>
-          <input type="tel" id="phoneNumber" class="form-control" placeholder="مثال: 07801234567" required>
-          <small class="form-text">أدخل رقم الواتساب العراقي الخاص بك. يجب أن يبدأ الرقم بـ 078 أو 077 أو 075</small>
-        </div>
-        
-        <button type="submit" class="btn">نشر الرحلة</button>
-      </form>
+      </div>
     </main>
     
     <!-- Success Modal -->
@@ -858,6 +950,75 @@
         
         input.value = value;
       });
+
+      function checkMatchingRequests() {
+        const from = document.getElementById('fromLocation').value;
+        const to = document.getElementById('toLocation').value;
+        const date = document.getElementById('departureDate').value;
+
+        if (!from || !to || !date) return;
+
+        const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
+        const matchingRequests = requests.filter(request => {
+          const requestDate = new Date(request.date);
+          const selectedDate = new Date(date);
+          requestDate.setHours(0, 0, 0, 0);
+          selectedDate.setHours(0, 0, 0, 0);
+
+          return (
+            !request.fulfilled &&
+            request.from.includes(from) &&
+            request.to.includes(to) &&
+            requestDate.getTime() === selectedDate.getTime()
+          );
+        });
+
+        const requestsList = document.getElementById('requestsList');
+        
+        if (matchingRequests.length === 0) {
+          requestsList.innerHTML = `
+            <div class="no-requests">
+              <i class="fas fa-search"></i>
+              <p>لا توجد طلبات ركاب مطابقة حالياً</p>
+            </div>
+          `;
+          return;
+        }
+
+        requestsList.innerHTML = matchingRequests.map(request => `
+          <div class="request-card">
+            <div class="request-info">
+              <div class="request-route">
+                ${request.from} ← ${request.to}
+              </div>
+              <div class="request-details">
+                <span><i class="fas fa-calendar"></i> ${formatDate(request.date)}</span>
+                <span><i class="fas fa-users"></i> ${request.seats} مقاعد</span>
+              </div>
+            </div>
+            <div class="request-contact">
+              <a href="tel:${request.phone}" class="contact-btn">
+                <i class="fas fa-phone"></i>
+                اتصال
+              </a>
+              <a href="chat.html" class="contact-btn">
+                <i class="fas fa-comment"></i>
+                محادثة
+              </a>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Add event listeners to form fields
+      document.getElementById('fromLocation').addEventListener('input', checkMatchingRequests);
+      document.getElementById('toLocation').addEventListener('input', checkMatchingRequests);
+      document.getElementById('departureDate').addEventListener('change', checkMatchingRequests);
+
+      function formatDate(dateStr) {
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        return new Date(dateStr).toLocaleDateString('ar-IQ', options);
+      }
     </script>
   </body>
 </html>
