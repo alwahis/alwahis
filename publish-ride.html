@@ -644,6 +644,7 @@
         <div class="nav-links">
           <a href="index.html">الرئيسية</a>
           <a href="publish-ride.html" class="active">نشر رحلة</a>
+          <a href="available-requests.html">طلبات الركاب</a>
           <a href="my-rides.html">رحلاتي</a>
         </div>
       </div>
@@ -713,11 +714,6 @@
           
           <button type="submit" class="btn">نشر الرحلة</button>
         </form>
-
-        <div id="matchingRequests" class="matching-requests">
-          <h2>طلبات الركاب المطابقة</h2>
-          <div id="requestsList"></div>
-        </div>
       </div>
     </main>
     
@@ -725,9 +721,6 @@
     <div id="successModal" class="modal">
       <div class="modal-content">
         <h2>تم نشر رحلتك بنجاح!</h2>
-        <div id="matchingRequests" class="matching-requests">
-          <!-- Matching requests will be loaded here -->
-        </div>
         <div class="modal-actions">
           <a href="my-rides.html" class="view-rides-btn">عرض رحلاتي</a>
           <button class="close-modal-btn" onclick="closeSuccessModal()">إغلاق</button>
@@ -819,63 +812,8 @@
         rides.push(ride);
         localStorage.setItem('publishedRides', JSON.stringify(rides));
 
-        // Show success modal and load matching requests
+        // Show success modal
         document.getElementById('successModal').style.display = 'block';
-        loadMatchingRequests(from, to, date);
-      }
-
-      function loadMatchingRequests(fromLocation, toLocation, dateString) {
-        const requestsContainer = document.getElementById('matchingRequests');
-        const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
-        
-        // Filter matching requests
-        const matchingRequests = requests.filter(request => 
-          request.from === fromLocation && 
-          request.to === toLocation && 
-          request.date === dateString
-        );
-
-        if (matchingRequests.length === 0) {
-          requestsContainer.innerHTML = `
-            <div class="no-requests">
-              <h3>شكراً لمشاركة رحلتك!</h3>
-              <p>سيتواصل معك المسافرون المتجهون لنفس الوجهة قريباً</p>
-            </div>
-          `;
-          return;
-        }
-
-        requestsContainer.innerHTML = `
-          <h3>المسافرون المهتمون برحلتك:</h3>
-          ${matchingRequests.map(request => `
-            <div class="request-card">
-              <div class="request-info">
-                <div>رقم الهاتف: ${request.phone}</div>
-                ${request.fullCar ? 
-                  '<div class="request-seats">حجز السيارة كاملة</div>' : 
-                  `<div class="request-seats">${request.seats} مقاعد</div>`
-                }
-              </div>
-              <button class="contact-btn" onclick="contactPassenger('${request.phone}')">
-                تواصل عبر واتساب
-              </button>
-            </div>
-          `).join('')}
-        `;
-      }
-
-      function contactPassenger(phone) {
-        // Format the message
-        const message = encodeURIComponent('مرحباً! أنا سائق من تطبيق عالواهس. شاهدت طلب رحلتك.');
-        
-        // Format phone number
-        let whatsappNumber = phone.replace(/\D/g, '');
-        if (whatsappNumber.startsWith('0')) {
-          whatsappNumber = '964' + whatsappNumber.substring(1);
-        }
-        
-        // Open WhatsApp
-        window.open(`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${message}`, '_blank');
       }
 
       function closeSuccessModal() {
@@ -950,75 +888,6 @@
         
         input.value = value;
       });
-
-      function checkMatchingRequests() {
-        const from = document.getElementById('fromLocation').value;
-        const to = document.getElementById('toLocation').value;
-        const date = document.getElementById('departureDate').value;
-
-        if (!from || !to || !date) return;
-
-        const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
-        const matchingRequests = requests.filter(request => {
-          const requestDate = new Date(request.date);
-          const selectedDate = new Date(date);
-          requestDate.setHours(0, 0, 0, 0);
-          selectedDate.setHours(0, 0, 0, 0);
-
-          return (
-            !request.fulfilled &&
-            request.from.includes(from) &&
-            request.to.includes(to) &&
-            requestDate.getTime() === selectedDate.getTime()
-          );
-        });
-
-        const requestsList = document.getElementById('requestsList');
-        
-        if (matchingRequests.length === 0) {
-          requestsList.innerHTML = `
-            <div class="no-requests">
-              <i class="fas fa-search"></i>
-              <p>لا توجد طلبات ركاب مطابقة حالياً</p>
-            </div>
-          `;
-          return;
-        }
-
-        requestsList.innerHTML = matchingRequests.map(request => `
-          <div class="request-card">
-            <div class="request-info">
-              <div class="request-route">
-                ${request.from} ← ${request.to}
-              </div>
-              <div class="request-details">
-                <span><i class="fas fa-calendar"></i> ${formatDate(request.date)}</span>
-                <span><i class="fas fa-users"></i> ${request.seats} مقاعد</span>
-              </div>
-            </div>
-            <div class="request-contact">
-              <a href="tel:${request.phone}" class="contact-btn">
-                <i class="fas fa-phone"></i>
-                اتصال
-              </a>
-              <a href="chat.html" class="contact-btn">
-                <i class="fas fa-comment"></i>
-                محادثة
-              </a>
-            </div>
-          </div>
-        `).join('');
-      }
-
-      // Add event listeners to form fields
-      document.getElementById('fromLocation').addEventListener('input', checkMatchingRequests);
-      document.getElementById('toLocation').addEventListener('input', checkMatchingRequests);
-      document.getElementById('departureDate').addEventListener('change', checkMatchingRequests);
-
-      function formatDate(dateStr) {
-        const options = { year: 'numeric', month: 'long', day: 'numeric' };
-        return new Date(dateStr).toLocaleDateString('ar-IQ', options);
-      }
     </script>
   </body>
 </html>
