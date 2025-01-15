@@ -628,6 +628,13 @@
   </div>
 
   <script>
+    // Global variables to track data state
+    let lastRidesHash = '';
+    let lastRequestsHash = '';
+    let lastChatsHash = '';
+    let lastDriversHash = '';
+    let pollingInterval;
+
     // The actual password hash (using SHA-256)
     const ADMIN_PASSWORD_HASH = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'; // This is the hash of 'password'
 
@@ -666,25 +673,55 @@
     }
 
     function logout() {
+      stopPolling();
       localStorage.removeItem('adminLoggedIn');
       localStorage.removeItem('adminLoginTime');
       document.getElementById('loginContainer').style.display = 'flex';
       document.getElementById('adminContainer').style.display = 'none';
+      document.getElementById('loginForm').reset();
     }
 
     function showAdminPanel() {
       try {
+        const isLoggedIn = localStorage.getItem('adminLoggedIn');
+        const loginTime = localStorage.getItem('adminLoginTime');
+        
+        if (!isLoggedIn || !loginTime || (Date.now() - parseInt(loginTime)) > 24 * 60 * 60 * 1000) {
+          logout();
+          return;
+        }
+
         document.getElementById('loginContainer').style.display = 'none';
         document.getElementById('adminContainer').style.display = 'block';
-        loadRides();
-        loadRequests();
-        loadDrivers();
-        updateStats();
-        showTab('rides'); // Show rides tab by default
+        
+        startPolling();
       } catch (error) {
         console.error('Error showing admin panel:', error);
         alert('حدث خطأ أثناء تحميل لوحة التحكم. يرجى تحديث الصفحة.');
       }
+    }
+
+    function startPolling() {
+      // Initial load
+      loadAllData();
+      
+      // Poll every 3 seconds
+      pollingInterval = setInterval(checkForUpdates, 3000);
+    }
+
+    function stopPolling() {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+      }
+    }
+
+    function loadAllData() {
+      loadRides();
+      loadRequests();
+      loadDrivers();
+      loadChats();
+      updateStats();
     }
 
     function loadRides() {
@@ -1185,6 +1222,52 @@
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       return hashHex;
+    }
+
+    async function checkForUpdates() {
+      try {
+        const rides = localStorage.getItem('publishedRides') || '[]';
+        const requests = localStorage.getItem('rideRequests') || '[]';
+        const chats = localStorage.getItem('chatSessions') || '[]';
+        const drivers = localStorage.getItem('drivers') || '[]';
+
+        const newRidesHash = await sha256(rides);
+        const newRequestsHash = await sha256(requests);
+        const newChatsHash = await sha256(chats);
+        const newDriversHash = await sha256(drivers);
+
+        let hasUpdates = false;
+
+        if (newRidesHash !== lastRidesHash) {
+          loadRides();
+          lastRidesHash = newRidesHash;
+          hasUpdates = true;
+        }
+
+        if (newRequestsHash !== lastRequestsHash) {
+          loadRequests();
+          lastRequestsHash = newRequestsHash;
+          hasUpdates = true;
+        }
+
+        if (newChatsHash !== lastChatsHash) {
+          loadChats();
+          lastChatsHash = newChatsHash;
+          hasUpdates = true;
+        }
+
+        if (newDriversHash !== lastDriversHash) {
+          loadDrivers();
+          lastDriversHash = newDriversHash;
+          hasUpdates = true;
+        }
+
+        if (hasUpdates) {
+          updateStats();
+        }
+      } catch (error) {
+        console.error('Error checking for updates:', error);
+      }
     }
   </script>
 </body>
