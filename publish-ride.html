@@ -301,137 +301,6 @@
         border-radius: 8px;
         padding: 1rem;
         margin-bottom: 1rem;
-      }
-
-      .request-header {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 0.5rem;
-      }
-
-      .request-details {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 0.5rem;
-        margin-bottom: 0.5rem;
-      }
-
-      .detail-item {
-        display: flex;
-        flex-direction: column;
-      }
-
-      .detail-label {
-        font-size: 0.9rem;
-        color: #666;
-      }
-
-      .detail-value {
-        font-weight: 500;
-      }
-
-      .contact-btn {
-        background: linear-gradient(135deg, #25D366, #128C7E);
-        color: white;
-        border: none;
-        border-radius: 5px;
-        padding: 0.5rem 1rem;
-        cursor: pointer;
-        width: 100%;
-        margin-top: 0.5rem;
-      }
-
-      .no-requests {
-        text-align: center;
-        padding: 1rem;
-        color: #666;
-      }
-      
-      input[type="date"], input[type="time"] {
-        font-family: 'Noto Kufi Arabic', sans-serif;
-        cursor: pointer;
-      }
-      
-      input[type="date"]::-webkit-calendar-picker-indicator,
-      input[type="time"]::-webkit-calendar-picker-indicator {
-        cursor: pointer;
-        padding: 5px;
-        filter: invert(60%);
-      }
-      
-      input[type="date"]::-webkit-calendar-picker-indicator:hover,
-      input[type="time"]::-webkit-calendar-picker-indicator:hover {
-        filter: invert(80%);
-      }
-      
-      @media (max-width: 768px) {
-        .publish-form {
-          padding: 1.5rem;
-        }
-        
-        .form-row {
-          grid-template-columns: 1fr;
-          gap: 0;
-        }
-        
-        .btn {
-          padding: 1rem;
-        }
-      }
-      
-      .image-upload-container {
-        margin: 10px 0;
-      }
-
-      .image-preview {
-        width: 100%;
-        height: 200px;
-        border: 2px dashed #ddd;
-        border-radius: 8px;
-        margin-top: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        background: #f8f9fa;
-        position: relative;
-      }
-
-      .image-preview img {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-      }
-
-      .upload-placeholder {
-        color: #666;
-        text-align: center;
-        padding: 20px;
-      }
-
-      .image-preview:hover {
-        border-color: #FF8C00;
-        cursor: pointer;
-      }
-
-      #successModal .modal-content {
-        max-width: 500px;
-        background: white;
-        padding: 2rem;
-        border-radius: 15px;
-        text-align: center;
-      }
-
-      .matching-requests {
-        margin-top: 2rem;
-        text-align: right;
-      }
-
-      .request-card {
-        background: #f8f9fa;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 1rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -791,6 +660,17 @@
             <small class="form-text">أدخل رقم الواتساب العراقي الخاص بك. يجب أن يبدأ الرقم بـ 078 أو 077 أو 075</small>
           </div>
           
+          <div class="form-group">
+            <label>اسم السائق</label>
+            <input type="text" id="driverName" class="form-control" placeholder="مثال: علي حسين" required>
+          </div>
+          
+          <div class="form-group">
+            <label>تفاصيل السيارة (اختياري)</label>
+            <textarea id="carDetails" class="form-control" placeholder="مثال: سيارة تويوتا كامري ٢٠٢٣ - أبيض - ٤ مقاعد"></textarea>
+            <small class="form-text">يمكنك إضافة تفاصيل إضافية عن السيارة</small>
+          </div>
+          
           <button type="submit" class="btn">نشر الرحلة</button>
         </form>
       </div>
@@ -822,6 +702,9 @@
     </footer>
 
     <script>
+      // API base URL
+      const API_BASE_URL = 'https://alwahis.onrender.com';
+
       // Set minimum date to today
       document.addEventListener('DOMContentLoaded', function() {
         const today = new Date();
@@ -839,7 +722,7 @@
         document.getElementById('departureTime').value = `${hours}:${minutes}`;
       });
 
-      function publishRide(event) {
+      async function publishRide(event) {
         event.preventDefault();
 
         const from = document.getElementById('fromLocation').value;
@@ -847,92 +730,99 @@
         const date = document.getElementById('departureDate').value;
         const time = document.getElementById('departureTime').value;
         const carType = document.getElementById('carType').value;
-        const seats = document.getElementById('availableSeats').value;
-        const price = document.getElementById('pricePerSeat').value;
+        const seats = parseInt(document.getElementById('availableSeats').value);
+        const price = parseInt(document.getElementById('pricePerSeat').value);
         const phone = document.getElementById('phoneNumber').value;
+        const name = document.getElementById('driverName').value;
+        const carDetails = document.getElementById('carDetails').value;
 
         const ride = {
           from,
           to,
           date,
           time,
-          carType,
-          seats,
-          price,
-          phone,
-          timestamp: new Date().toISOString()
+          car_type: carType,
+          car_details: carDetails,
+          total_seats: seats,
+          available_seats: seats,
+          price_per_seat: price,
+          driver_name: name,
+          driver_phone: phone,
+          status: 'active'
         };
 
-        const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-        rides.push(ride);
-        localStorage.setItem('publishedRides', JSON.stringify(rides));
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/rides`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(ride)
+          });
 
-        // Show success modal and load matching requests
-        showSuccessModal(from, to, date);
+          if (!response.ok) {
+            throw new Error('Failed to publish ride');
+          }
+
+          const data = await response.json();
+          console.log('Ride published successfully:', data);
+
+          // Show success modal
+          showSuccessModal(from, to, date);
+        } catch (error) {
+          console.error('Error publishing ride:', error);
+          alert('حدث خطأ أثناء نشر الرحلة. الرجاء المحاولة مرة أخرى.');
+        }
       }
 
-      function showSuccessModal(from, to, date) {
+      async function showSuccessModal(from, to, date) {
         const matchingRequests = document.getElementById('matchingRequests');
-        const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
         
-        // Filter matching requests
-        const filteredRequests = requests.filter(request => {
-          const requestDate = new Date(request.date);
-          const rideDate = new Date(date);
-          requestDate.setHours(0, 0, 0, 0);
-          rideDate.setHours(0, 0, 0, 0);
-
-          return (
-            !request.fulfilled &&
-            request.from.toLowerCase().includes(from.toLowerCase()) &&
-            request.to.toLowerCase().includes(to.toLowerCase()) &&
-            requestDate.getTime() === rideDate.getTime()
-          );
-        });
-
-        if (filteredRequests.length === 0) {
-          matchingRequests.innerHTML = `
-            <div class="no-requests">
-              <i class="fas fa-search"></i>
-              <h3>لا توجد طلبات مطابقة حالياً</h3>
-              <p>سيتم إخطارك عند وجود طلبات جديدة لنفس المسار</p>
-            </div>
-          `;
-        } else {
-          matchingRequests.innerHTML = `
-            <h3>طلبات الركاب المطابقة لرحلتك:</h3>
-            ${filteredRequests.map(request => `
-              <div class="request-card">
-                <div class="request-header">
-                  <div class="request-route">
-                    <i class="fas fa-map-marker-alt"></i>
-                    ${request.from} ← ${request.to}
-                  </div>
-                </div>
-                
-                <div class="request-details">
-                  <span>
-                    <i class="fas fa-calendar"></i>
-                    ${formatDate(request.date)}
-                  </span>
-                  <span>
-                    <i class="fas fa-users"></i>
-                    ${request.seats} مقاعد
-                  </span>
-                </div>
-
-                <a href="https://wa.me/${formatPhone(request.phone)}?text=${encodeURIComponent('مرحباً! أنا سائق من تطبيق عالواهس. شاهدت طلب رحلتك.')}" 
-                   class="whatsapp-btn" 
-                   target="_blank">
-                  <i class="fab fa-whatsapp"></i>
-                  تواصل عبر واتساب
-                </a>
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/requests/matching?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&date=${date}`);
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch matching requests');
+          }
+          
+          const requests = await response.json();
+          
+          if (requests.length === 0) {
+            matchingRequests.innerHTML = `
+              <div class="no-requests">
+                <i class="fas fa-search"></i>
+                <h3>لا توجد طلبات مطابقة حالياً</h3>
+                <p>سيتم إخطارك عند وجود طلبات جديدة لنفس المسار</p>
               </div>
-            `).join('')}
+            `;
+          } else {
+            matchingRequests.innerHTML = `
+              <h3>طلبات مطابقة لرحلتك:</h3>
+              <div class="requests-list">
+                ${requests.map(request => `
+                  <div class="request-item">
+                    <div class="request-info">
+                      <p><strong>الاسم:</strong> ${request.name}</p>
+                      <p><strong>الهاتف:</strong> ${formatPhone(request.phone)}</p>
+                      <p><strong>التاريخ:</strong> ${formatDate(request.date)}</p>
+                      <p><strong>عدد المقاعد:</strong> ${request.seats}</p>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            `;
+          }
+        } catch (error) {
+          console.error('Error fetching matching requests:', error);
+          matchingRequests.innerHTML = `
+            <div class="error-message">
+              <i class="fas fa-exclamation-circle"></i>
+              <p>حدث خطأ أثناء تحميل الطلبات المطابقة</p>
+            </div>
           `;
         }
 
-        document.getElementById('successModal').style.display = 'block';
+        document.getElementById('successModal').style.display = 'flex';
       }
 
       function formatPhone(phone) {

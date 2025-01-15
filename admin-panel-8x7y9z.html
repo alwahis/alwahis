@@ -746,16 +746,42 @@
 
     async function loadRides() {
       try {
+        console.log('Fetching rides from:', `${API_BASE_URL}/api/admin/rides`);
         const response = await fetch(`${API_BASE_URL}/api/admin/rides`);
-        if (!response.ok) throw new Error('Failed to fetch rides');
+        console.log('Response:', response);
+        
+        if (!response.ok) {
+          console.error('Failed to fetch rides:', response.status, response.statusText);
+          throw new Error('Failed to fetch rides');
+        }
         
         const data = await response.json();
-        const rides = data.rides;
+        console.log('Received rides:', data);
         
+        const rides = data.rides;
         const ridesTableBody = document.getElementById('ridesTableBody');
+        
+        if (!ridesTableBody) {
+          console.error('Rides table body not found!');
+          return;
+        }
+        
         ridesTableBody.innerHTML = '';
         
+        if (rides.length === 0) {
+          console.log('No rides found');
+          ridesTableBody.innerHTML = `
+            <tr>
+              <td colspan="10" style="text-align: center; padding: 2rem;">
+                لا توجد رحلات حالياً
+              </td>
+            </tr>
+          `;
+          return;
+        }
+        
         rides.forEach(ride => {
+          console.log('Processing ride:', ride);
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${ride.from} - ${ride.to}</td>
@@ -775,6 +801,16 @@
         });
       } catch (error) {
         console.error('Error loading rides:', error);
+        const ridesTableBody = document.getElementById('ridesTableBody');
+        if (ridesTableBody) {
+          ridesTableBody.innerHTML = `
+            <tr>
+              <td colspan="10" style="text-align: center; padding: 2rem; color: red;">
+                حدث خطأ أثناء تحميل الرحلات: ${error.message}
+              </td>
+            </tr>
+          `;
+        }
       }
     }
 
@@ -813,8 +849,19 @@
     }
 
     function showAdminPanel() {
+      console.log('Showing admin panel...');
       document.getElementById('loginContainer').style.display = 'none';
       document.getElementById('adminContainer').style.display = 'block';
+      
+      // Load initial data
+      loadRides();
+      updateStats();
+      
+      // Start polling
+      startPolling();
+      
+      // Show rides tab by default
+      showTab('rides');
     }
 
     function startPolling() {
