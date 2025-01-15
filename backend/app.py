@@ -153,6 +153,67 @@ def get_ride_requests():
     except Exception as e:
         return jsonify({'error': 'حدث خطأ في جلب طلبات الرحلات'}), 400
 
+@app.route('/api/rides', methods=['POST'])
+def publish_ride():
+    data = request.json
+    try:
+        # Create or get driver
+        driver = User.query.filter_by(phone=data['driver_phone']).first()
+        if not driver:
+            driver = User(
+                name=data['driver_name'],
+                phone=data['driver_phone'],
+                user_type='driver'
+            )
+            db.session.add(driver)
+            db.session.commit()
+        
+        # Create or get car
+        car = Car.query.filter_by(driver_id=driver.id).first()
+        if not car:
+            car = Car(
+                driver_id=driver.id,
+                car_type=data['car_type'],
+                car_details=data.get('car_details', ''),
+                photo_url='https://example.com/default-car.jpg'  # Default photo
+            )
+            db.session.add(car)
+            db.session.commit()
+        
+        # Create ride
+        departure_time = datetime.strptime(f"{data['date']} {data['time']}", "%Y-%m-%d %H:%M")
+        new_ride = Ride(
+            driver_id=driver.id,
+            departure_city=data['from'],
+            destination_city=data['to'],
+            departure_time=departure_time,
+            total_seats=data['total_seats'],
+            available_seats=data['available_seats'],
+            price_per_seat=data['price_per_seat'],
+            car_id=car.id,
+            status='active'
+        )
+        db.session.add(new_ride)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'تم نشر الرحلة بنجاح',
+            'ride': {
+                'id': new_ride.id,
+                'from': new_ride.departure_city,
+                'to': new_ride.destination_city,
+                'date': new_ride.departure_time.strftime('%Y-%m-%d'),
+                'time': new_ride.departure_time.strftime('%H:%M'),
+                'driver': {
+                    'name': driver.name,
+                    'phone': driver.phone
+                }
+            }
+        }), 201
+    except Exception as e:
+        print('Error publishing ride:', str(e))  # For debugging
+        return jsonify({'error': 'حدث خطأ في نشر الرحلة'}), 400
+
 # Admin routes
 @app.route('/api/admin/rides', methods=['GET'])
 def get_all_rides():
