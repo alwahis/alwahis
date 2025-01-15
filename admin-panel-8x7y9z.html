@@ -719,146 +719,89 @@
       }
     });
 
-    // The actual password hash (using SHA-256)
-    const ADMIN_PASSWORD_HASH = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'; // This is the hash of 'password'
-
-    async function login(event) {
+    function login(event) {
       event.preventDefault();
       
-      try {
-        const password = document.getElementById('password').value;
-        const hash = await sha256(password);
-        
-        if (hash === ADMIN_PASSWORD_HASH) {
-          localStorage.setItem('adminLoggedIn', 'true');
-          localStorage.setItem('adminLoginTime', new Date().getTime().toString());
-          showAdminPanel();
-        } else {
-          alert('كلمة المرور غير صحيحة');
-        }
-      } catch (error) {
-        console.error('Login error:', error);
-        alert('حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.');
+      const password = document.getElementById('password').value;
+      if (password !== 'password') {
+        alert('كلمة المرور غير صحيحة');
+        return;
       }
-    }
-
-    function logout() {
-      stopPolling();
-      localStorage.removeItem('adminLoggedIn');
-      localStorage.removeItem('adminLoginTime');
-      document.getElementById('loginContainer').style.display = 'flex';
-      document.getElementById('adminContainer').style.display = 'none';
-      document.getElementById('loginForm').reset();
+      
+      console.log('Login successful'); // Debug log
+      localStorage.setItem('adminLoggedIn', 'true');
+      localStorage.setItem('adminLoginTime', Date.now().toString());
+      
+      // Show admin panel and load data
+      showAdminPanel();
     }
 
     function showAdminPanel() {
-      document.getElementById('loginContainer').style.display = 'none';
-      document.getElementById('adminContainer').style.display = 'block';
-      
-      // Load initial data
-      loadAllData();
-      
-      // Start polling for updates
-      startPolling();
-      
-      // Show the default tab (rides)
-      showTab('rides');
-      
-      // Add debug logging
-      console.log('Admin panel initialized');
-      console.log('Current localStorage:', {
-        rides: JSON.parse(localStorage.getItem('publishedRides') || '[]'),
-        requests: JSON.parse(localStorage.getItem('rideRequests') || '[]'),
-        drivers: JSON.parse(localStorage.getItem('drivers') || '[]'),
-        chats: JSON.parse(localStorage.getItem('chatSessions') || '[]')
-      });
+      try {
+        document.getElementById('loginContainer').style.display = 'none';
+        document.getElementById('adminContainer').style.display = 'block';
+        
+        console.log('Admin panel shown, loading initial data...'); // Debug log
+        
+        // Load initial data
+        loadAllData();
+        
+        // Start polling for updates
+        startPolling();
+        
+        // Show the default tab (rides)
+        showTab('rides');
+        
+        // Log current localStorage state
+        console.log('Current localStorage state:', {
+          rides: JSON.parse(localStorage.getItem('publishedRides') || '[]'),
+          requests: JSON.parse(localStorage.getItem('rideRequests') || '[]'),
+          drivers: JSON.parse(localStorage.getItem('drivers') || '[]'),
+          chats: JSON.parse(localStorage.getItem('chatSessions') || '[]')
+        });
+      } catch (error) {
+        console.error('Error showing admin panel:', error);
+        alert('حدث خطأ أثناء تحميل لوحة التحكم. يرجى تحديث الصفحة.');
+      }
     }
 
     function loadAllData() {
       console.log('Loading all data...'); // Debug log
+      
+      // Load data in sequence
       loadRides();
       loadRequests();
       loadDrivers();
       loadChats();
+      
+      // Update stats after all data is loaded
       updateStats();
+      
+      console.log('All data loaded successfully'); // Debug log
     }
 
     function startPolling() {
-      // Poll every 5 seconds for updates
       if (!window.updateInterval) {
+        console.log('Starting update polling...'); // Debug log
         window.updateInterval = setInterval(checkForUpdates, 5000);
-        console.log('Started polling for updates'); // Debug log
       }
     }
 
     function stopPolling() {
       if (window.updateInterval) {
+        console.log('Stopping update polling...'); // Debug log
         clearInterval(window.updateInterval);
         window.updateInterval = null;
-        console.log('Stopped polling for updates'); // Debug log
-      }
-    }
-
-    async function checkForUpdates() {
-      try {
-        // Get current data
-        const rides = localStorage.getItem('publishedRides') || '[]';
-        const requests = localStorage.getItem('rideRequests') || '[]';
-        const drivers = localStorage.getItem('drivers') || '[]';
-        const chats = localStorage.getItem('chatSessions') || '[]';
-        
-        // Hash the current data
-        const currentRidesHash = await sha256(rides);
-        const currentRequestsHash = await sha256(requests);
-        const currentDriversHash = await sha256(drivers);
-        const currentChatsHash = await sha256(chats);
-        
-        // Check if data has changed
-        let hasChanges = false;
-        
-        if (currentRidesHash !== lastRidesHash) {
-          console.log('Rides updated, reloading...'); // Debug log
-          loadRides();
-          lastRidesHash = currentRidesHash;
-          hasChanges = true;
-        }
-        
-        if (currentRequestsHash !== lastRequestsHash) {
-          console.log('Requests updated, reloading...'); // Debug log
-          loadRequests();
-          lastRequestsHash = currentRequestsHash;
-          hasChanges = true;
-        }
-        
-        if (currentDriversHash !== lastDriversHash) {
-          console.log('Drivers updated, reloading...'); // Debug log
-          loadDrivers();
-          lastDriversHash = currentDriversHash;
-          hasChanges = true;
-        }
-        
-        if (currentChatsHash !== lastChatsHash) {
-          console.log('Chats updated, reloading...'); // Debug log
-          loadChats();
-          lastChatsHash = currentChatsHash;
-          hasChanges = true;
-        }
-        
-        if (hasChanges) {
-          updateStats();
-        }
-      } catch (error) {
-        console.error('Error checking for updates:', error);
       }
     }
 
     function loadRides() {
       try {
         let rides = localStorage.getItem('publishedRides');
-        console.log('Loading rides:', rides); // Debug log
+        console.log('Loading rides from localStorage:', rides); // Debug log
         
         if (!rides) {
-          console.log('No rides found, initializing empty array...'); // Debug log
+          console.log('No rides found in localStorage'); // Debug log
           rides = '[]';
           localStorage.setItem('publishedRides', rides);
         }
@@ -872,7 +815,8 @@
           return;
         }
         
-        if (rides.length === 0) {
+        if (!Array.isArray(rides) || rides.length === 0) {
+          console.log('No rides to display'); // Debug log
           tableBody.innerHTML = `
             <tr>
               <td colspan="8" style="text-align: center; padding: 2rem;">
@@ -883,10 +827,18 @@
           return;
         }
         
-        // Sort rides by date (newest first)
-        rides.sort((a, b) => new Date(b.date) - new Date(a.date));
+        console.log(`Found ${rides.length} rides`); // Debug log
+        
+        // Sort rides by timestamp (newest first)
+        rides.sort((a, b) => {
+          const dateA = new Date(a.timestamp || a.date);
+          const dateB = new Date(b.timestamp || b.date);
+          return dateB - dateA;
+        });
         
         tableBody.innerHTML = rides.map(ride => {
+          console.log('Processing ride:', ride); // Debug log
+          
           const formattedDate = formatDate(ride.date);
           const formattedTime = ride.time || '';
           const status = ride.cancelled ? 'ملغية' : ride.driverId ? 'تم القبول' : 'نشطة';
@@ -916,10 +868,8 @@
             </tr>
           `;
         }).join('');
-
-        // Update the stats after loading rides
-        updateStats();
-        console.log('Rides loaded successfully'); // Debug log
+        
+        console.log('Rides table updated successfully'); // Debug log
       } catch (error) {
         console.error('Error loading rides:', error);
         const tableBody = document.getElementById('ridesTableBody');
@@ -1483,33 +1433,20 @@
 
     function formatDate(dateStr) {
       try {
-        if (!dateStr) return '';
+        if (!dateStr) return 'غير محدد';
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return 'غير محدد';
         
-        // Handle both date string formats
-        let date;
-        if (dateStr.includes('T')) {
-          // ISO format
-          date = new Date(dateStr);
-        } else {
-          // DD/MM/YYYY format
-          const [day, month, year] = dateStr.split('/');
-          date = new Date(year, month - 1, day);
-        }
+        const options = {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        };
         
-        if (isNaN(date.getTime())) {
-          console.error('Invalid date:', dateStr);
-          return dateStr;
-        }
-        
-        return new Intl.DateTimeFormat('ar-IQ', { 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric',
-          weekday: 'long'
-        }).format(date);
+        return new Intl.DateTimeFormat('ar-IQ', options).format(date);
       } catch (error) {
         console.error('Error formatting date:', error);
-        return dateStr;
+        return 'غير محدد';
       }
     }
 
