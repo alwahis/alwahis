@@ -763,10 +763,12 @@
           driver_phone: phone
         };
 
-        console.log('Publishing ride:', ride);
+        console.log('=== Publishing Ride ===');
         console.log('API URL:', `${API_BASE_URL}/api/rides`);
+        console.log('Request Data:', JSON.stringify(ride, null, 2));
 
         try {
+          console.log('Sending request...');
           const response = await fetch(`${API_BASE_URL}/api/rides`, {
             method: 'POST',
             headers: {
@@ -776,11 +778,12 @@
             body: JSON.stringify(ride)
           });
 
-          console.log('Response status:', response.status);
-          console.log('Response headers:', Object.fromEntries(response.headers));
+          console.log('=== Response Details ===');
+          console.log('Status:', response.status, response.statusText);
+          console.log('Headers:', Object.fromEntries(response.headers));
 
           const data = await response.json();
-          console.log('Response data:', data);
+          console.log('Response Data:', JSON.stringify(data, null, 2));
 
           if (!response.ok) {
             throw new Error(data.error || 'Failed to publish ride');
@@ -789,11 +792,10 @@
           // Show success modal
           showSuccessModal(from, to, date);
         } catch (error) {
-          console.error('Error publishing ride:', error);
-          console.error('Error details:', {
-            message: error.message,
-            stack: error.stack
-          });
+          console.error('=== Error Details ===');
+          console.error('Error Type:', error.constructor.name);
+          console.error('Error Message:', error.message);
+          console.error('Error Stack:', error.stack);
           alert('حدث خطأ أثناء نشر الرحلة. الرجاء المحاولة مرة أخرى.');
         }
       }
