@@ -702,9 +702,6 @@
     </footer>
 
     <script>
-      // API base URL
-      const API_BASE_URL = 'https://alwahis.netlify.app';
-
       // Set minimum date to today
       document.addEventListener('DOMContentLoaded', function() {
         const today = new Date();
@@ -751,6 +748,7 @@
 
         // Create ride object
         const ride = {
+          id: Date.now(),
           from,
           to,
           date,
@@ -758,44 +756,30 @@
           car_type: carType,
           car_details: carDetails,
           total_seats: seats,
+          available_seats: seats,
           price_per_seat: price,
           driver_name: name,
-          driver_phone: phone
+          driver_phone: phone,
+          status: 'active'
         };
 
-        console.log('=== Publishing Ride ===');
-        console.log('API URL:', `${API_BASE_URL}/api/rides`);
-        console.log('Request Data:', JSON.stringify(ride, null, 2));
-
         try {
-          console.log('Sending request...');
-          const response = await fetch(`${API_BASE_URL}/api/rides`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            },
-            body: JSON.stringify(ride)
-          });
-
-          console.log('=== Response Details ===');
-          console.log('Status:', response.status, response.statusText);
-          console.log('Headers:', Object.fromEntries(response.headers));
-
-          const data = await response.json();
-          console.log('Response Data:', JSON.stringify(data, null, 2));
-
-          if (!response.ok) {
-            throw new Error(data.error || 'Failed to publish ride');
-          }
+          // Get existing rides from localStorage
+          const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+          
+          // Add new ride
+          rides.push(ride);
+          
+          // Save back to localStorage
+          localStorage.setItem('publishedRides', JSON.stringify(rides));
 
           // Show success modal
           showSuccessModal(from, to, date);
+          
+          // Reset form
+          event.target.reset();
         } catch (error) {
-          console.error('=== Error Details ===');
-          console.error('Error Type:', error.constructor.name);
-          console.error('Error Message:', error.message);
-          console.error('Error Stack:', error.stack);
+          console.error('Error publishing ride:', error);
           alert('حدث خطأ أثناء نشر الرحلة. الرجاء المحاولة مرة أخرى.');
         }
       }
@@ -804,13 +788,11 @@
         const matchingRequests = document.getElementById('matchingRequests');
         
         try {
-          const response = await fetch(`${API_BASE_URL}/api/requests/matching?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&date=${date}`);
+          // Get existing rides from localStorage
+          const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
           
-          if (!response.ok) {
-            throw new Error('Failed to fetch matching requests');
-          }
-          
-          const requests = await response.json();
+          // Filter matching requests
+          const requests = rides.filter(ride => ride.from === from && ride.to === to && ride.date === date);
           
           if (requests.length === 0) {
             matchingRequests.innerHTML = `
@@ -827,10 +809,10 @@
                 ${requests.map(request => `
                   <div class="request-item">
                     <div class="request-info">
-                      <p><strong>الاسم:</strong> ${request.name}</p>
-                      <p><strong>الهاتف:</strong> ${formatPhone(request.phone)}</p>
-                      <p><strong>التاريخ:</strong> ${formatDate(request.date)}</p>
-                      <p><strong>عدد المقاعد:</strong> ${request.seats}</p>
+                      <p><strong>الاسم:</strong> ${request.driver_name}</p>
+                      <p><strong>الهاتف:</strong> ${request.driver_phone}</p>
+                      <p><strong>التاريخ:</strong> ${request.date}</p>
+                      <p><strong>عدد المقاعد:</strong> ${request.available_seats}</p>
                     </div>
                   </div>
                 `).join('')}
@@ -848,23 +830,6 @@
         }
 
         document.getElementById('successModal').style.display = 'flex';
-      }
-
-      function formatPhone(phone) {
-        // Remove any non-digit characters
-        const digits = phone.replace(/\D/g, '');
-        
-        // If the number starts with 0, replace it with 964
-        if (digits.startsWith('0')) {
-          return '964' + digits.slice(1);
-        }
-        
-        return digits;
-      }
-
-      function formatDate(dateStr) {
-        const options = { year: 'numeric', month: 'long', day: 'numeric' };
-        return new Date(dateStr).toLocaleDateString('ar-IQ', options);
       }
 
       function closeSuccessModal() {

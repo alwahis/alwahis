@@ -722,9 +722,6 @@
     let lastRequestsHash = '';
     let lastChatsHash = '';
     
-    // API base URL
-    const API_BASE_URL = 'https://alwahis.netlify.app';
-
     async function login(event) {
       event.preventDefault();
       const password = document.getElementById('password').value;
@@ -746,25 +743,8 @@
 
     async function loadRides() {
       try {
-        console.log('Fetching rides from:', `${API_BASE_URL}/api/rides`);
-        const response = await fetch(`${API_BASE_URL}/api/rides`, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        });
-        console.log('Response:', response);
-        
-        if (!response.ok) {
-          console.error('Failed to fetch rides:', response.status, response.statusText);
-          throw new Error('Failed to fetch rides');
-        }
-        
-        const data = await response.json();
-        console.log('Received rides:', data);
-        
-        const rides = data.rides || [];
+        // Get rides from localStorage
+        const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
         const ridesTableBody = document.getElementById('ridesTableBody');
         
         if (!ridesTableBody) {
@@ -775,7 +755,6 @@
         ridesTableBody.innerHTML = '';
         
         if (rides.length === 0) {
-          console.log('No rides found');
           ridesTableBody.innerHTML = `
             <tr>
               <td colspan="10" style="text-align: center; padding: 2rem;">
@@ -787,98 +766,95 @@
         }
         
         rides.forEach(ride => {
-          console.log('Processing ride:', ride);
           const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td>${ride.from || ride.departure_city} - ${ride.to || ride.destination_city}</td>
-            <td>${new Date(ride.departure_time).toLocaleDateString('ar-IQ')}</td>
-            <td>${new Date(ride.departure_time).toLocaleTimeString('ar-IQ')}</td>
-            <td>${ride.driver?.name || ''}</td>
-            <td>${ride.driver?.phone || ''}</td>
-            <td>${ride.total_seats || ''}</td>
-            <td>${ride.available_seats || ''}</td>
-            <td>${ride.price_per_seat || ''} د.ع</td>
-            <td><span class="status status-${ride.status || 'active'}">${ride.status || 'نشط'}</span></td>
+            <td>${ride.from} - ${ride.to}</td>
+            <td>${formatDate(ride.date)}</td>
+            <td>${ride.time}</td>
+            <td>${ride.driver_name}</td>
+            <td>${ride.driver_phone}</td>
+            <td>${ride.total_seats}</td>
+            <td>${ride.available_seats}</td>
+            <td>${ride.price_per_seat} د.ع</td>
+            <td><span class="status status-${ride.status}">${ride.status === 'active' ? 'نشط' : 'ملغي'}</span></td>
             <td>
-              <button class="delete-btn" onclick="deleteRide(${ride.id})">حذف</button>
+              <button onclick="deleteRide('${ride.id}')" class="delete-btn">
+                <i class="fas fa-trash"></i>
+              </button>
             </td>
           `;
           ridesTableBody.appendChild(tr);
         });
+        
+        updateStats();
       } catch (error) {
         console.error('Error loading rides:', error);
-        const ridesTableBody = document.getElementById('ridesTableBody');
-        if (ridesTableBody) {
-          ridesTableBody.innerHTML = `
-            <tr>
-              <td colspan="10" style="text-align: center; padding: 2rem; color: red;">
-                حدث خطأ أثناء تحميل الرحلات: ${error.message}
-              </td>
-            </tr>
-          `;
+      }
+    }
+
+    function deleteRide(rideId) {
+      if (confirm('هل أنت متأكد من حذف هذه الرحلة؟')) {
+        try {
+          // Get rides from localStorage
+          const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+          
+          // Remove the ride
+          const updatedRides = rides.filter(ride => ride.id !== rideId);
+          
+          // Save back to localStorage
+          localStorage.setItem('publishedRides', JSON.stringify(updatedRides));
+          
+          // Reload rides
+          loadRides();
+        } catch (error) {
+          console.error('Error deleting ride:', error);
+          alert('حدث خطأ أثناء حذف الرحلة');
         }
       }
     }
 
-    async function deleteRide(rideId) {
-      if (!confirm('هل أنت متأكد من حذف هذه الرحلة؟')) return;
-      
+    function updateStats() {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/admin/rides/${rideId}`, {
-          method: 'DELETE'
-        });
+        // Get rides from localStorage
+        const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
         
-        if (!response.ok) throw new Error('Failed to delete ride');
+        // Calculate stats
+        const totalRides = rides.length;
+        const activeRides = rides.filter(ride => ride.status === 'active').length;
+        const totalSeats = rides.reduce((sum, ride) => sum + ride.total_seats, 0);
+        const availableSeats = rides.reduce((sum, ride) => sum + ride.available_seats, 0);
         
-        await loadRides();
-        await updateStats();
-      } catch (error) {
-        console.error('Error deleting ride:', error);
-        alert('حدث خطأ أثناء حذف الرحلة');
-      }
-    }
-
-    async function updateStats() {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/admin/stats`);
-        if (!response.ok) throw new Error('Failed to fetch stats');
-        
-        const stats = await response.json();
-        
-        document.getElementById('totalRides').textContent = stats.total_rides;
-        document.getElementById('activeRides').textContent = stats.active_rides;
-        document.getElementById('totalUsers').textContent = stats.total_users;
-        document.getElementById('totalDrivers').textContent = stats.total_drivers;
+        // Update stats in the UI
+        document.getElementById('totalRides').textContent = totalRides;
+        document.getElementById('activeRides').textContent = activeRides;
+        document.getElementById('totalSeats').textContent = totalSeats;
+        document.getElementById('availableSeats').textContent = availableSeats;
       } catch (error) {
         console.error('Error updating stats:', error);
       }
     }
 
+    function formatDate(dateStr) {
+      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      return new Date(dateStr).toLocaleDateString('ar-IQ', options);
+    }
+
     function showAdminPanel() {
-      console.log('Showing admin panel...');
       document.getElementById('loginContainer').style.display = 'none';
       document.getElementById('adminContainer').style.display = 'block';
-      
-      // Load initial data
       loadRides();
-      updateStats();
-      
-      // Start polling
-      startPolling();
-      
-      // Show rides tab by default
-      showTab('rides');
     }
 
     function startPolling() {
-      setInterval(async () => {
-        await loadRides();
-        await updateStats();
-      }, 5000);
+      // Poll every 30 seconds
+      setInterval(loadRides, 30000);
     }
 
     function stopPolling() {
-      clearInterval();
+      // Clear all intervals
+      for (let i = 1; i < 99999; i++) {
+        window.clearInterval(i);
+      }
     }
 
     function showTab(tabName) {
@@ -893,16 +869,14 @@
       });
       
       // Show selected tab
-      const selectedTab = document.getElementById(tabName + 'Tab');
-      if (selectedTab) {
-        selectedTab.style.display = 'block';
-        // Add active class to selected button
-        const selectedBtn = document.querySelector(`.tab-btn[onclick="showTab('${tabName}')"]`);
-        if (selectedBtn) {
-          selectedBtn.classList.add('active');
-        }
-      } else {
-        console.error(`Tab not found: ${tabName}Tab`);
+      document.getElementById(tabName + 'Tab').style.display = 'block';
+      
+      // Add active class to clicked button
+      document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
+      
+      // Load data for the tab
+      if (tabName === 'rides') {
+        loadRides();
       }
     }
 
