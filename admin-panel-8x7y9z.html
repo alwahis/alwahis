@@ -723,7 +723,7 @@
     let lastChatsHash = '';
     
     // API base URL
-    const API_BASE_URL = 'https://alwahis.onrender.com';
+    const API_BASE_URL = 'https://alwahis.netlify.app';
 
     async function login(event) {
       event.preventDefault();
@@ -746,8 +746,14 @@
 
     async function loadRides() {
       try {
-        console.log('Fetching rides from:', `${API_BASE_URL}/api/admin/rides`);
-        const response = await fetch(`${API_BASE_URL}/api/admin/rides`);
+        console.log('Fetching rides from:', `${API_BASE_URL}/api/rides`);
+        const response = await fetch(`${API_BASE_URL}/api/rides`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
         console.log('Response:', response);
         
         if (!response.ok) {
@@ -758,7 +764,7 @@
         const data = await response.json();
         console.log('Received rides:', data);
         
-        const rides = data.rides;
+        const rides = data.rides || [];
         const ridesTableBody = document.getElementById('ridesTableBody');
         
         if (!ridesTableBody) {
@@ -784,15 +790,15 @@
           console.log('Processing ride:', ride);
           const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td>${ride.from} - ${ride.to}</td>
-            <td>${ride.date}</td>
-            <td>${ride.time}</td>
-            <td>${ride.driver.name}</td>
-            <td>${ride.driver.phone}</td>
-            <td>${ride.seats}</td>
-            <td>${ride.available_seats}</td>
-            <td>${ride.price} د.ع</td>
-            <td><span class="status status-${ride.status}">${ride.status}</span></td>
+            <td>${ride.from || ride.departure_city} - ${ride.to || ride.destination_city}</td>
+            <td>${new Date(ride.departure_time).toLocaleDateString('ar-IQ')}</td>
+            <td>${new Date(ride.departure_time).toLocaleTimeString('ar-IQ')}</td>
+            <td>${ride.driver?.name || ''}</td>
+            <td>${ride.driver?.phone || ''}</td>
+            <td>${ride.total_seats || ''}</td>
+            <td>${ride.available_seats || ''}</td>
+            <td>${ride.price_per_seat || ''} د.ع</td>
+            <td><span class="status status-${ride.status || 'active'}">${ride.status || 'نشط'}</span></td>
             <td>
               <button class="delete-btn" onclick="deleteRide(${ride.id})">حذف</button>
             </td>
