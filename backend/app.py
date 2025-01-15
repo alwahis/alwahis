@@ -153,6 +153,66 @@ def get_ride_requests():
     except Exception as e:
         return jsonify({'error': 'حدث خطأ في جلب طلبات الرحلات'}), 400
 
+# Admin routes
+@app.route('/api/admin/rides', methods=['GET'])
+def get_all_rides():
+    try:
+        rides = Ride.query.all()
+        rides_data = []
+        for ride in rides:
+            car = Car.query.get(ride.car_id)
+            driver = User.query.get(ride.driver_id)
+            rides_data.append({
+                'id': ride.id,
+                'from': ride.departure_city,
+                'to': ride.destination_city,
+                'date': ride.departure_time.strftime('%Y-%m-%d'),
+                'time': ride.departure_time.strftime('%H:%M'),
+                'seats': ride.total_seats,
+                'available_seats': ride.available_seats,
+                'price': ride.price_per_seat,
+                'status': ride.status,
+                'driver': {
+                    'name': driver.name,
+                    'phone': driver.phone
+                },
+                'car': {
+                    'type': car.car_type,
+                    'details': car.car_details
+                },
+                'timestamp': ride.created_at.isoformat()
+            })
+        return jsonify({'rides': rides_data}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/rides/<int:ride_id>', methods=['DELETE'])
+def delete_ride(ride_id):
+    try:
+        ride = Ride.query.get_or_404(ride_id)
+        db.session.delete(ride)
+        db.session.commit()
+        return jsonify({'message': 'تم حذف الرحلة بنجاح'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/stats', methods=['GET'])
+def get_admin_stats():
+    try:
+        total_rides = Ride.query.count()
+        active_rides = Ride.query.filter_by(status='active').count()
+        total_users = User.query.count()
+        total_drivers = User.query.filter_by(user_type='driver').count()
+        
+        return jsonify({
+            'total_rides': total_rides,
+            'active_rides': active_rides,
+            'total_users': total_users,
+            'total_drivers': total_drivers
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

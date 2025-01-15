@@ -721,869 +721,135 @@
     let lastRidesHash = '';
     let lastRequestsHash = '';
     let lastChatsHash = '';
-    let lastDriversHash = '';
-    let pollingInterval;
+    
+    // API base URL
+    const API_BASE_URL = 'https://alwahis.onrender.com';
 
-    // Add test data if none exists
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('Initializing admin panel...'); // Debug log
-      
-      // Test ride data
-      if (!localStorage.getItem('publishedRides')) {
-        console.log('Adding test ride data...'); // Debug log
-        const testRides = [
-          {
-            id: '1',
-            date: '2025-01-15',
-            time: '14:30',
-            from: 'بغداد',
-            to: 'البصرة',
-            phone: '07801234567',
-            price: 25000,
-            seats: 4,
-            cancelled: false
-          }
-        ];
-        localStorage.setItem('publishedRides', JSON.stringify(testRides));
-      }
-
-      // Test request data
-      if (!localStorage.getItem('rideRequests')) {
-        console.log('Adding test request data...'); // Debug log
-        const testRequests = [
-          {
-            id: '1',
-            date: '2025-01-15',
-            phone: '07801234567',
-            rideId: '1',
-            seats: 2,
-            accepted: false
-          }
-        ];
-        localStorage.setItem('rideRequests', JSON.stringify(testRequests));
-      }
-
-      // Test driver data
-      if (!localStorage.getItem('drivers')) {
-        console.log('Adding test driver data...'); // Debug log
-        const testDrivers = [
-          {
-            phone: '07801234567',
-            points: 100,
-            activeRide: null,
-            blocked: false
-          }
-        ];
-        localStorage.setItem('drivers', JSON.stringify(testDrivers));
-      }
-
-      // Check if already logged in
-      const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
-      const loginTime = parseInt(localStorage.getItem('adminLoginTime') || '0');
-      const currentTime = new Date().getTime();
-      
-      console.log('Login status:', { isLoggedIn, loginTime }); // Debug log
-      
-      if (isLoggedIn && (currentTime - loginTime) < 24 * 60 * 60 * 1000) {
-        showAdminPanel();
-      } else {
-        logout();
-      }
-    });
-
-    function login(event) {
+    async function login(event) {
       event.preventDefault();
-      
       const password = document.getElementById('password').value;
-      if (password !== 'password') {
+      const hashedPassword = await sha256(password);
+      
+      if (hashedPassword === '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8') {
+        showAdminPanel();
+        startPolling();
+      } else {
         alert('كلمة المرور غير صحيحة');
-        return;
       }
-      
-      console.log('Login successful'); // Debug log
-      localStorage.setItem('adminLoggedIn', 'true');
-      localStorage.setItem('adminLoginTime', Date.now().toString());
-      
-      showAdminPanel();
     }
 
     function logout() {
-      stopPolling();
-      localStorage.removeItem('adminLoggedIn');
-      localStorage.removeItem('adminLoginTime');
       document.getElementById('loginContainer').style.display = 'flex';
       document.getElementById('adminContainer').style.display = 'none';
-      document.getElementById('password').value = '';
+      stopPolling();
     }
 
-    function showAdminPanel() {
+    async function loadRides() {
       try {
-        document.getElementById('loginContainer').style.display = 'none';
-        document.getElementById('adminContainer').style.display = 'block';
+        const response = await fetch(`${API_BASE_URL}/api/admin/rides`);
+        if (!response.ok) throw new Error('Failed to fetch rides');
         
-        console.log('Showing admin panel...'); // Debug log
+        const data = await response.json();
+        const rides = data.rides;
         
-        // Initialize data state
-        lastRidesHash = '';
-        lastRequestsHash = '';
-        lastChatsHash = '';
-        lastDriversHash = '';
+        const ridesTableBody = document.getElementById('ridesTableBody');
+        ridesTableBody.innerHTML = '';
         
-        // Load initial data
-        loadAllData();
-        
-        // Start polling
-        startPolling();
-        
-        // Show rides tab by default
-        showTab('rides');
-        
-        console.log('Admin panel initialized successfully'); // Debug log
-      } catch (error) {
-        console.error('Error showing admin panel:', error);
-        alert('حدث خطأ أثناء تحميل لوحة التحكم. يرجى تحديث الصفحة.');
-      }
-    }
-
-    function loadAllData() {
-      try {
-        console.log('Loading all data...'); // Debug log
-        
-        loadRides();
-        loadRequests();
-        loadDrivers();
-        loadChats();
-        updateStats();
-        
-        console.log('All data loaded successfully'); // Debug log
-      } catch (error) {
-        console.error('Error loading data:', error);
-      }
-    }
-
-    function startPolling() {
-      try {
-        if (window.pollingInterval) {
-          clearInterval(window.pollingInterval);
-        }
-        
-        console.log('Starting polling...'); // Debug log
-        window.pollingInterval = setInterval(checkForUpdates, 5000);
-      } catch (error) {
-        console.error('Error starting polling:', error);
-      }
-    }
-
-    function stopPolling() {
-      try {
-        if (window.pollingInterval) {
-          clearInterval(window.pollingInterval);
-          window.pollingInterval = null;
-          console.log('Polling stopped'); // Debug log
-        }
-      } catch (error) {
-        console.error('Error stopping polling:', error);
-      }
-    }
-
-    async function checkForUpdates() {
-      try {
-        console.log('Checking for updates...'); // Debug log
-        
-        // Get current data
-        const rides = localStorage.getItem('publishedRides') || '[]';
-        const requests = localStorage.getItem('rideRequests') || '[]';
-        const drivers = localStorage.getItem('drivers') || '[]';
-        const chats = localStorage.getItem('chatSessions') || '[]';
-        
-        // Hash the current data
-        const currentRidesHash = await sha256(rides);
-        const currentRequestsHash = await sha256(requests);
-        const currentDriversHash = await sha256(drivers);
-        const currentChatsHash = await sha256(chats);
-        
-        let hasChanges = false;
-        
-        if (currentRidesHash !== lastRidesHash) {
-          console.log('Rides updated, reloading...'); // Debug log
-          loadRides();
-          lastRidesHash = currentRidesHash;
-          hasChanges = true;
-        }
-        
-        if (currentRequestsHash !== lastRequestsHash) {
-          console.log('Requests updated, reloading...'); // Debug log
-          loadRequests();
-          lastRequestsHash = currentRequestsHash;
-          hasChanges = true;
-        }
-        
-        if (currentDriversHash !== lastDriversHash) {
-          console.log('Drivers updated, reloading...'); // Debug log
-          loadDrivers();
-          lastDriversHash = currentDriversHash;
-          hasChanges = true;
-        }
-        
-        if (currentChatsHash !== lastChatsHash) {
-          console.log('Chats updated, reloading...'); // Debug log
-          loadChats();
-          lastChatsHash = currentChatsHash;
-          hasChanges = true;
-        }
-        
-        if (hasChanges) {
-          updateStats();
-        }
-        
-        console.log('Update check complete'); // Debug log
-      } catch (error) {
-        console.error('Error checking for updates:', error);
-      }
-    }
-
-    function loadRides() {
-      try {
-        let rides = localStorage.getItem('publishedRides');
-        console.log('Loading rides:', rides); // Debug log
-        
-        if (!rides) {
-          console.log('No rides found, initializing empty array...'); // Debug log
-          rides = '[]';
-          localStorage.setItem('publishedRides', rides);
-        }
-        
-        rides = JSON.parse(rides);
-        console.log('Parsed rides:', rides); // Debug log
-        
-        const tableBody = document.getElementById('ridesTableBody');
-        if (!tableBody) {
-          console.error('Rides table body element not found');
-          return;
-        }
-        
-        if (rides.length === 0) {
-          console.log('No rides to display'); // Debug log
-          tableBody.innerHTML = `
-            <tr>
-              <td colspan="8" style="text-align: center; padding: 2rem;">
-                لا توجد رحلات حالياً
-              </td>
-            </tr>
+        rides.forEach(ride => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${ride.from} - ${ride.to}</td>
+            <td>${ride.date}</td>
+            <td>${ride.time}</td>
+            <td>${ride.driver.name}</td>
+            <td>${ride.driver.phone}</td>
+            <td>${ride.seats}</td>
+            <td>${ride.available_seats}</td>
+            <td>${ride.price} د.ع</td>
+            <td><span class="status status-${ride.status}">${ride.status}</span></td>
+            <td>
+              <button class="delete-btn" onclick="deleteRide(${ride.id})">حذف</button>
+            </td>
           `;
-          return;
-        }
-        
-        console.log(`Found ${rides.length} rides`); // Debug log
-        
-        // Sort rides by timestamp (newest first)
-        rides.sort((a, b) => {
-          const dateA = new Date(a.timestamp || a.date);
-          const dateB = new Date(b.timestamp || b.date);
-          return dateB - dateA;
+          ridesTableBody.appendChild(tr);
         });
-        
-        tableBody.innerHTML = rides.map(ride => {
-          console.log('Processing ride:', ride); // Debug log
-          
-          const formattedDate = formatDate(ride.date);
-          const formattedTime = ride.time || '';
-          const status = ride.cancelled ? 'ملغية' : ride.driverId ? 'تم القبول' : 'نشطة';
-          const statusClass = ride.cancelled ? 'status-cancelled' : ride.driverId ? 'status-accepted' : 'status-active';
-          
-          return `
-            <tr>
-              <td>
-                <div>${formattedDate || 'غير محدد'}</div>
-                ${formattedTime ? `<div class="time">${formattedTime}</div>` : ''}
-              </td>
-              <td>${ride.from || 'غير محدد'}</td>
-              <td>${ride.to || 'غير محدد'}</td>
-              <td>${ride.phone || 'غير محدد'}</td>
-              <td>${ride.price || 0} د.ع</td>
-              <td>${ride.seats || 1}</td>
-              <td>
-                <span class="status ${statusClass}">
-                  ${status}
-                </span>
-              </td>
-              <td>
-                <button class="delete-btn" onclick="deleteRide('${ride.timestamp}')">
-                  حذف
-                </button>
-              </td>
-            </tr>
-          `;
-        }).join('');
-        
-        console.log('Rides table updated successfully'); // Debug log
-        updateStats();
       } catch (error) {
         console.error('Error loading rides:', error);
-        const tableBody = document.getElementById('ridesTableBody');
-        if (tableBody) {
-          tableBody.innerHTML = `
-            <tr>
-              <td colspan="8" style="text-align: center; padding: 2rem; color: #e74c3c;">
-                حدث خطأ أثناء تحميل الرحلات: ${error.message}
-              </td>
-            </tr>
-          `;
-        }
       }
     }
 
-    function deleteRide(timestamp) {
+    async function deleteRide(rideId) {
+      if (!confirm('هل أنت متأكد من حذف هذه الرحلة؟')) return;
+      
       try {
-        if (!confirm('هل أنت متأكد من حذف هذه الرحلة؟')) {
-          return;
-        }
-
-        let rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+        const response = await fetch(`${API_BASE_URL}/api/admin/rides/${rideId}`, {
+          method: 'DELETE'
+        });
         
-        // Find the ride
-        const rideIndex = rides.findIndex(ride => ride.timestamp === timestamp);
-        if (rideIndex === -1) {
-          alert('لم يتم العثور على الرحلة');
-          return;
-        }
-
-        // Get the ride before removing it
-        const ride = rides[rideIndex];
-
-        // Remove the ride
-        rides.splice(rideIndex, 1);
-        localStorage.setItem('publishedRides', JSON.stringify(rides));
-
-        // If the ride had a driver, update driver status
-        if (ride.driverId) {
-          let drivers = JSON.parse(localStorage.getItem('drivers') || '[]');
-          const driverIndex = drivers.findIndex(d => d.phone === ride.driverId);
-          if (driverIndex !== -1) {
-            drivers[driverIndex].activeRide = null;
-            localStorage.setItem('drivers', JSON.stringify(drivers));
-          }
-        }
-
-        // Remove any requests for this ride
-        let requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
-        requests = requests.filter(req => req.rideId !== timestamp);
-        localStorage.setItem('rideRequests', JSON.stringify(requests));
-
-        // Reload data
-        loadRides();
-        loadRequests();
-        loadDrivers();
-        updateStats();
+        if (!response.ok) throw new Error('Failed to delete ride');
+        
+        await loadRides();
+        await updateStats();
       } catch (error) {
         console.error('Error deleting ride:', error);
-        alert('حدث خطأ أثناء حذف الرحلة. يرجى المحاولة مرة أخرى.');
+        alert('حدث خطأ أثناء حذف الرحلة');
       }
     }
 
-    function updateStats() {
+    async function updateStats() {
       try {
-        const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-        const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
-        const drivers = JSON.parse(localStorage.getItem('drivers') || '[]');
-        const chats = JSON.parse(localStorage.getItem('chatSessions') || '[]');
-
-        const activeRides = rides.filter(ride => !ride.cancelled && !ride.driverId).length;
-        const activeRequests = requests.filter(req => !req.fulfilled).length;
-        const activeDrivers = drivers.filter(driver => !driver.blocked).length;
-        const activeChats = chats.length;
-
-        document.getElementById('activeRidesCount').textContent = activeRides;
-        document.getElementById('requestsCount').textContent = activeRequests;
-        document.getElementById('driversCount').textContent = activeDrivers;
-        document.getElementById('chatsCount').textContent = activeChats;
+        const response = await fetch(`${API_BASE_URL}/api/admin/stats`);
+        if (!response.ok) throw new Error('Failed to fetch stats');
+        
+        const stats = await response.json();
+        
+        document.getElementById('totalRides').textContent = stats.total_rides;
+        document.getElementById('activeRides').textContent = stats.active_rides;
+        document.getElementById('totalUsers').textContent = stats.total_users;
+        document.getElementById('totalDrivers').textContent = stats.total_drivers;
       } catch (error) {
         console.error('Error updating stats:', error);
       }
     }
 
-    function loadRequests() {
-      try {
-        let requests = localStorage.getItem('rideRequests');
-        console.log('Loading requests:', requests); // Debug log
-        
-        if (!requests) {
-          console.log('No requests found, initializing empty array...'); // Debug log
-          requests = '[]';
-          localStorage.setItem('rideRequests', requests);
-        }
-        
-        requests = JSON.parse(requests);
-        console.log('Parsed requests:', requests); // Debug log
-        
-        const tableBody = document.getElementById('requestsTableBody');
-        if (!tableBody) {
-          console.error('Requests table body element not found');
-          return;
-        }
-        
-        if (requests.length === 0) {
-          tableBody.innerHTML = `
-            <tr>
-              <td colspan="6" style="text-align: center; padding: 2rem;">
-                لا توجد طلبات حالياً
-              </td>
-            </tr>
-          `;
-          return;
-        }
-        
-        // Sort requests by date (newest first)
-        requests.sort((a, b) => new Date(b.date) - new Date(a.date));
-        
-        tableBody.innerHTML = requests.map(request => {
-          const status = request.fulfilled ? 'تم القبول' : 'قيد الانتظار';
-          const statusClass = request.fulfilled ? 'status-accepted' : 'status-active';
-          
-          return `
-            <tr>
-              <td>${formatDate(request.date) || 'غير محدد'}</td>
-              <td>${request.phone || 'غير محدد'}</td>
-              <td>${request.rideId || 'غير محدد'}</td>
-              <td>${request.seats || 1}</td>
-              <td>
-                <span class="status ${statusClass}">
-                  ${status}
-                </span>
-              </td>
-              <td>
-                <button class="delete-btn" onclick="deleteRequest('${request.id}')">
-                  حذف
-                </button>
-              </td>
-            </tr>
-          `;
-        }).join('');
-      } catch (error) {
-        console.error('Error loading requests:', error);
-        const tableBody = document.getElementById('requestsTableBody');
-        if (tableBody) {
-          tableBody.innerHTML = `
-            <tr>
-              <td colspan="6" style="text-align: center; padding: 2rem; color: #e74c3c;">
-                حدث خطأ أثناء تحميل الطلبات: ${error.message}
-              </td>
-            </tr>
-          `;
-        }
-      }
+    function showAdminPanel() {
+      document.getElementById('loginContainer').style.display = 'none';
+      document.getElementById('adminContainer').style.display = 'block';
     }
 
-    function deleteRequest(requestId) {
-      try {
-        if (!confirm('هل أنت متأكد من حذف هذا الطلب؟')) {
-          return;
-        }
-
-        let requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
-        
-        // Find the request
-        const requestIndex = requests.findIndex(req => req.id === requestId);
-        if (requestIndex === -1) {
-          alert('لم يتم العثور على الطلب');
-          return;
-        }
-
-        // Remove the request
-        requests.splice(requestIndex, 1);
-        localStorage.setItem('rideRequests', JSON.stringify(requests));
-
-        // Reload data
-        loadRequests();
-        updateStats();
-      } catch (error) {
-        console.error('Error deleting request:', error);
-        alert('حدث خطأ أثناء حذف الطلب. يرجى المحاولة مرة أخرى.');
-      }
+    function startPolling() {
+      setInterval(async () => {
+        await loadRides();
+        await updateStats();
+      }, 5000);
     }
 
-    function loadDrivers() {
-      try {
-        let drivers = localStorage.getItem('drivers');
-        console.log('Loading drivers:', drivers); // Debug log
-        
-        if (!drivers) {
-          console.log('No drivers found, initializing empty array...'); // Debug log
-          drivers = '[]';
-          localStorage.setItem('drivers', drivers);
-        }
-        
-        drivers = JSON.parse(drivers);
-        console.log('Parsed drivers:', drivers); // Debug log
-        
-        const tableBody = document.getElementById('driversTableBody');
-        if (!tableBody) {
-          console.error('Drivers table body element not found');
-          return;
-        }
-        
-        if (drivers.length === 0) {
-          tableBody.innerHTML = `
-            <tr>
-              <td colspan="7" style="text-align: center; padding: 2rem;">
-                لا يوجد سائقين حالياً
-              </td>
-            </tr>
-          `;
-          return;
-        }
-        
-        // Sort drivers by registration date (newest first)
-        drivers.sort((a, b) => {
-          const dateA = new Date(a.registrationDate || 0);
-          const dateB = new Date(b.registrationDate || 0);
-          return dateB - dateA;
-        });
-        
-        tableBody.innerHTML = drivers.map(driver => {
-          const isBlocked = driver.blocked;
-          const blockBtnClass = isBlocked ? 'block-btn unblock' : 'block-btn';
-          const blockBtnText = isBlocked ? 'إلغاء الحظر' : 'حظر';
-          
-          return `
-            <tr>
-              <td>${driver.name || 'غير محدد'}</td>
-              <td>${driver.phone || 'غير محدد'}</td>
-              <td>${driver.carType || 'غير محدد'}</td>
-              <td>${driver.rating || 0}</td>
-              <td>${driver.points || 0}</td>
-              <td>
-                <div class="points-control">
-                  <input type="number" class="points-input" value="${driver.points || 0}" 
-                         onchange="updateDriverPoints('${driver.phone}', this.value)" />
-                </div>
-              </td>
-              <td>
-                <button class="${blockBtnClass}" onclick="toggleBlockDriver('${driver.phone}')">
-                  ${blockBtnText}
-                </button>
-              </td>
-            </tr>
-          `;
-        }).join('');
-      } catch (error) {
-        console.error('Error loading drivers:', error);
-        const tableBody = document.getElementById('driversTableBody');
-        if (tableBody) {
-          tableBody.innerHTML = `
-            <tr>
-              <td colspan="7" style="text-align: center; padding: 2rem; color: #e74c3c;">
-                حدث خطأ أثناء تحميل السائقين: ${error.message}
-              </td>
-            </tr>
-          `;
-        }
-      }
-    }
-
-    function toggleBlockDriver(phone) {
-      try {
-        if (!phone) {
-          console.error('Phone number is required to block/unblock driver');
-          return;
-        }
-
-        let drivers = JSON.parse(localStorage.getItem('drivers') || '[]');
-        const driverIndex = drivers.findIndex(d => d.phone === phone);
-        
-        if (driverIndex === -1) {
-          console.error('Driver not found:', phone);
-          alert('لم يتم العثور على السائق');
-          return;
-        }
-
-        // Toggle blocked status
-        drivers[driverIndex].blocked = !drivers[driverIndex].blocked;
-        
-        // If blocking, remove any active rides
-        if (drivers[driverIndex].blocked) {
-          drivers[driverIndex].activeRide = null;
-        }
-
-        localStorage.setItem('drivers', JSON.stringify(drivers));
-        
-        // Reload data
-        loadDrivers();
-        updateStats();
-      } catch (error) {
-        console.error('Error toggling driver block status:', error);
-        alert('حدث خطأ أثناء تحديث حالة السائق. يرجى المحاولة مرة أخرى.');
-      }
-    }
-
-    function updateDriverPoints(phone, points) {
-      try {
-        if (!phone) {
-          console.error('Phone number is required to update points');
-          return;
-        }
-
-        points = parseInt(points) || 0;
-        if (points < 0) points = 0;
-        
-        let drivers = JSON.parse(localStorage.getItem('drivers') || '[]');
-        const driverIndex = drivers.findIndex(d => d.phone === phone);
-        
-        if (driverIndex === -1) {
-          console.error('Driver not found:', phone);
-          alert('لم يتم العثور على السائق');
-          return;
-        }
-
-        drivers[driverIndex].points = points;
-        localStorage.setItem('drivers', JSON.stringify(drivers));
-        
-        // Reload data
-        loadDrivers();
-        updateStats();
-      } catch (error) {
-        console.error('Error updating driver points:', error);
-        alert('حدث خطأ أثناء تحديث نقاط السائق. يرجى المحاولة مرة أخرى.');
-      }
+    function stopPolling() {
+      clearInterval();
     }
 
     function showTab(tabName) {
-      try {
-        // Hide all tabs
-        document.querySelectorAll('.tab-content').forEach(tab => {
-          tab.style.display = 'none';
-        });
-        
-        // Remove active class from all buttons
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-          btn.classList.remove('active');
-        });
-        
-        // Show selected tab
-        const selectedTab = document.getElementById(tabName + 'Tab');
-        if (selectedTab) {
-          selectedTab.style.display = 'block';
-          // Add active class to selected button
-          const selectedBtn = document.querySelector(`.tab-btn[onclick="showTab('${tabName}')"]`);
-          if (selectedBtn) {
-            selectedBtn.classList.add('active');
-          }
-        } else {
-          console.error(`Tab not found: ${tabName}Tab`);
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.style.display = 'none';
+      });
+      
+      // Remove active class from all buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      // Show selected tab
+      const selectedTab = document.getElementById(tabName + 'Tab');
+      if (selectedTab) {
+        selectedTab.style.display = 'block';
+        // Add active class to selected button
+        const selectedBtn = document.querySelector(`.tab-btn[onclick="showTab('${tabName}')"]`);
+        if (selectedBtn) {
+          selectedBtn.classList.add('active');
         }
-        
-        // Load data for the selected tab
-        switch(tabName) {
-          case 'rides':
-            loadRides();
-            break;
-          case 'requests':
-            loadRequests();
-            break;
-          case 'drivers':
-            loadDrivers();
-            break;
-          case 'chat':
-            loadChats();
-            break;
-        }
-      } catch (error) {
-        console.error('Error showing tab:', error);
-      }
-    }
-
-    function loadChats() {
-      try {
-        const chats = JSON.parse(localStorage.getItem('chatSessions') || '[]');
-        const chatsList = document.getElementById('chatList');
-        
-        if (chats.length === 0) {
-          chatsList.innerHTML = '<div class="no-chats">لا توجد محادثات</div>';
-          return;
-        }
-        
-        // Sort chats by last message time
-        chats.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
-        
-        chatsList.innerHTML = chats.map(chat => `
-          <div class="chat-item ${chat.unread ? 'unread' : ''}" onclick="showChat('${chat.sessionId}')">
-            <div class="chat-info">
-              <div class="chat-name">${chat.phone}</div>
-              <div class="chat-preview">${chat.lastMessage}</div>
-            </div>
-            <div class="chat-time">${formatDate(chat.lastMessageTime)}</div>
-          </div>
-        `).join('');
-      } catch (error) {
-        console.error('Error loading chats:', error);
-        alert('حدث خطأ أثناء تحميل المحادثات. يرجى تحديث الصفحة.');
-      }
-    }
-
-    function showChat(sessionId) {
-      try {
-        const chats = JSON.parse(localStorage.getItem('chatSessions') || '[]');
-        const chat = chats.find(c => c.sessionId === sessionId);
-        
-        if (!chat) {
-          alert('المحادثة غير موجودة');
-          return;
-        }
-        
-        const messagesContainer = document.getElementById('chatMessages');
-        messagesContainer.innerHTML = `
-          <div class="chat-header">
-            <div class="chat-contact">${chat.phone}</div>
-          </div>
-          <div class="messages-list">
-            ${chat.messages.map(msg => `
-              <div class="message ${msg.isAdmin ? 'admin' : 'user'}">
-                <div class="message-content">
-                  ${msg.type === 'text' ? msg.content : createAttachmentElement(msg)}
-                </div>
-                <div class="message-time">${formatDate(msg.time)}</div>
-              </div>
-            `).join('')}
-          </div>
-          <div class="chat-input">
-            <input type="text" id="messageInput" placeholder="اكتب رسالتك هنا...">
-            <button onclick="sendAdminMessage('${sessionId}')">إرسال</button>
-          </div>
-        `;
-        
-        // Mark chat as read
-        if (chat.unread) {
-          chat.unread = false;
-          localStorage.setItem('chatSessions', JSON.stringify(chats));
-          loadChats(); // Refresh chat list
-        }
-        
-        // Scroll to bottom
-        const messagesList = messagesContainer.querySelector('.messages-list');
-        messagesList.scrollTop = messagesList.scrollHeight;
-      } catch (error) {
-        console.error('Error showing chat:', error);
-        alert('حدث خطأ أثناء عرض المحادثة. يرجى المحاولة مرة أخرى.');
-      }
-    }
-
-    function sendAdminMessage(sessionId) {
-      try {
-        const messageInput = document.getElementById('messageInput');
-        const content = messageInput.value.trim();
-        
-        if (!content) return;
-        
-        const chats = JSON.parse(localStorage.getItem('chatSessions') || '[]');
-        const chatIndex = chats.findIndex(c => c.sessionId === sessionId);
-        
-        if (chatIndex === -1) {
-          alert('المحادثة غير موجودة');
-          return;
-        }
-        
-        const message = {
-          type: 'text',
-          content,
-          isAdmin: true,
-          time: new Date().toISOString()
-        };
-        
-        chats[chatIndex].messages.push(message);
-        chats[chatIndex].lastMessage = content;
-        chats[chatIndex].lastMessageTime = message.time;
-        
-        localStorage.setItem('chatSessions', JSON.stringify(chats));
-        messageInput.value = '';
-        
-        showChat(sessionId); // Refresh chat
-        loadChats(); // Refresh chat list
-      } catch (error) {
-        console.error('Error sending message:', error);
-        alert('حدث خطأ أثناء إرسال الرسالة. يرجى المحاولة مرة أخرى.');
-      }
-    }
-
-    function filterChats() {
-      try {
-        const searchInput = document.getElementById('chatSearch');
-        const searchTerm = searchInput.value.toLowerCase();
-        const chats = JSON.parse(localStorage.getItem('chatSessions') || '[]');
-        const chatsList = document.getElementById('chatList');
-        
-        const filteredChats = chats.filter(chat => 
-          chat.phone.toLowerCase().includes(searchTerm) ||
-          chat.messages.some(msg => msg.content.toLowerCase().includes(searchTerm))
-        );
-        
-        if (filteredChats.length === 0) {
-          chatsList.innerHTML = '<div class="no-chats">لا توجد نتائج</div>';
-          return;
-        }
-        
-        chatsList.innerHTML = filteredChats.map(chat => `
-          <div class="chat-item ${chat.unread ? 'unread' : ''}" onclick="showChat('${chat.sessionId}')">
-            <div class="chat-info">
-              <div class="chat-name">${chat.phone}</div>
-              <div class="chat-preview">${chat.lastMessage}</div>
-            </div>
-            <div class="chat-time">${formatDate(chat.lastMessageTime)}</div>
-          </div>
-        `).join('');
-      } catch (error) {
-        console.error('Error filtering chats:', error);
-      }
-    }
-
-    function createAttachmentElement(message) {
-      try {
-        switch (message.type) {
-          case 'image':
-            return `<img src="${message.content}" alt="صورة" class="chat-image">`;
-          case 'file':
-            return `
-              <div class="file-attachment">
-                <i class="fas fa-file"></i>
-                <a href="${message.content}" target="_blank" download>
-                  تحميل الملف
-                </a>
-              </div>
-            `;
-          case 'location':
-            return `
-              <div class="location-attachment">
-                <i class="fas fa-map-marker-alt"></i>
-                <a href="https://www.google.com/maps?q=${message.content.lat},${message.content.lng}" 
-                   target="_blank">
-                  عرض الموقع
-                </a>
-              </div>
-            `;
-          default:
-            return message.content;
-        }
-      } catch (error) {
-        console.error('Error creating attachment element:', error);
-        return 'خطأ في عرض المرفق';
-      }
-    }
-
-    function formatDate(dateStr) {
-      try {
-        if (!dateStr) return 'غير محدد';
-        const date = new Date(dateStr);
-        if (isNaN(date.getTime())) return 'غير محدد';
-        
-        const options = {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        };
-        
-        return new Intl.DateTimeFormat('ar-IQ', options).format(date);
-      } catch (error) {
-        console.error('Error formatting date:', error);
-        return 'غير محدد';
+      } else {
+        console.error(`Tab not found: ${tabName}Tab`);
       }
     }
 
