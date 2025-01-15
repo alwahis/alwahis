@@ -752,55 +752,104 @@
     }
 
     function showAdminPanel() {
-      try {
-        console.log('Showing admin panel...'); // Debug log
-        const isLoggedIn = localStorage.getItem('adminLoggedIn');
-        const loginTime = localStorage.getItem('adminLoginTime');
-        
-        console.log('Login status:', { isLoggedIn, loginTime }); // Debug log
-        
-        if (!isLoggedIn || !loginTime || (Date.now() - parseInt(loginTime)) > 24 * 60 * 60 * 1000) {
-          console.log('Session expired or invalid'); // Debug log
-          logout();
-          return;
-        }
-
-        document.getElementById('loginContainer').style.display = 'none';
-        document.getElementById('adminContainer').style.display = 'block';
-        
-        // Show the last active tab or default to rides
-        const lastActiveTab = localStorage.getItem('activeAdminTab') || 'rides';
-        console.log('Showing tab:', lastActiveTab); // Debug log
-        showTab(lastActiveTab);
-        
-        startPolling();
-      } catch (error) {
-        console.error('Error showing admin panel:', error);
-        alert('حدث خطأ أثناء تحميل لوحة التحكم. يرجى تحديث الصفحة.');
-      }
-    }
-
-    function startPolling() {
-      // Initial load
+      document.getElementById('loginContainer').style.display = 'none';
+      document.getElementById('adminContainer').style.display = 'block';
+      
+      // Load initial data
       loadAllData();
       
-      // Poll every 3 seconds
-      pollingInterval = setInterval(checkForUpdates, 3000);
-    }
-
-    function stopPolling() {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-        pollingInterval = null;
-      }
+      // Start polling for updates
+      startPolling();
+      
+      // Show the default tab (rides)
+      showTab('rides');
+      
+      // Add debug logging
+      console.log('Admin panel initialized');
+      console.log('Current localStorage:', {
+        rides: JSON.parse(localStorage.getItem('publishedRides') || '[]'),
+        requests: JSON.parse(localStorage.getItem('rideRequests') || '[]'),
+        drivers: JSON.parse(localStorage.getItem('drivers') || '[]'),
+        chats: JSON.parse(localStorage.getItem('chatSessions') || '[]')
+      });
     }
 
     function loadAllData() {
+      console.log('Loading all data...'); // Debug log
       loadRides();
       loadRequests();
       loadDrivers();
       loadChats();
       updateStats();
+    }
+
+    function startPolling() {
+      // Poll every 5 seconds for updates
+      if (!window.updateInterval) {
+        window.updateInterval = setInterval(checkForUpdates, 5000);
+        console.log('Started polling for updates'); // Debug log
+      }
+    }
+
+    function stopPolling() {
+      if (window.updateInterval) {
+        clearInterval(window.updateInterval);
+        window.updateInterval = null;
+        console.log('Stopped polling for updates'); // Debug log
+      }
+    }
+
+    async function checkForUpdates() {
+      try {
+        // Get current data
+        const rides = localStorage.getItem('publishedRides') || '[]';
+        const requests = localStorage.getItem('rideRequests') || '[]';
+        const drivers = localStorage.getItem('drivers') || '[]';
+        const chats = localStorage.getItem('chatSessions') || '[]';
+        
+        // Hash the current data
+        const currentRidesHash = await sha256(rides);
+        const currentRequestsHash = await sha256(requests);
+        const currentDriversHash = await sha256(drivers);
+        const currentChatsHash = await sha256(chats);
+        
+        // Check if data has changed
+        let hasChanges = false;
+        
+        if (currentRidesHash !== lastRidesHash) {
+          console.log('Rides updated, reloading...'); // Debug log
+          loadRides();
+          lastRidesHash = currentRidesHash;
+          hasChanges = true;
+        }
+        
+        if (currentRequestsHash !== lastRequestsHash) {
+          console.log('Requests updated, reloading...'); // Debug log
+          loadRequests();
+          lastRequestsHash = currentRequestsHash;
+          hasChanges = true;
+        }
+        
+        if (currentDriversHash !== lastDriversHash) {
+          console.log('Drivers updated, reloading...'); // Debug log
+          loadDrivers();
+          lastDriversHash = currentDriversHash;
+          hasChanges = true;
+        }
+        
+        if (currentChatsHash !== lastChatsHash) {
+          console.log('Chats updated, reloading...'); // Debug log
+          loadChats();
+          lastChatsHash = currentChatsHash;
+          hasChanges = true;
+        }
+        
+        if (hasChanges) {
+          updateStats();
+        }
+      } catch (error) {
+        console.error('Error checking for updates:', error);
+      }
     }
 
     function loadRides() {
@@ -823,13 +872,6 @@
           return;
         }
         
-        // Sort rides by date (newest first)
-        rides.sort((a, b) => {
-          const dateA = new Date(a.timestamp || a.date);
-          const dateB = new Date(b.timestamp || b.date);
-          return dateB - dateA;
-        });
-        
         if (rides.length === 0) {
           tableBody.innerHTML = `
             <tr>
@@ -840,6 +882,9 @@
           `;
           return;
         }
+        
+        // Sort rides by date (newest first)
+        rides.sort((a, b) => new Date(b.date) - new Date(a.date));
         
         tableBody.innerHTML = rides.map(ride => {
           const formattedDate = formatDate(ride.date);
@@ -1474,52 +1519,6 @@
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       return hashHex;
-    }
-
-    async function checkForUpdates() {
-      try {
-        const rides = localStorage.getItem('publishedRides') || '[]';
-        const requests = localStorage.getItem('rideRequests') || '[]';
-        const chats = localStorage.getItem('chatSessions') || '[]';
-        const drivers = localStorage.getItem('drivers') || '[]';
-
-        const newRidesHash = await sha256(rides);
-        const newRequestsHash = await sha256(requests);
-        const newChatsHash = await sha256(chats);
-        const newDriversHash = await sha256(drivers);
-
-        let hasUpdates = false;
-
-        if (newRidesHash !== lastRidesHash) {
-          loadRides();
-          lastRidesHash = newRidesHash;
-          hasUpdates = true;
-        }
-
-        if (newRequestsHash !== lastRequestsHash) {
-          loadRequests();
-          lastRequestsHash = newRequestsHash;
-          hasUpdates = true;
-        }
-
-        if (newChatsHash !== lastChatsHash) {
-          loadChats();
-          lastChatsHash = newChatsHash;
-          hasUpdates = true;
-        }
-
-        if (newDriversHash !== lastDriversHash) {
-          loadDrivers();
-          lastDriversHash = newDriversHash;
-          hasUpdates = true;
-        }
-
-        if (hasUpdates) {
-          updateStats();
-        }
-      } catch (error) {
-        console.error('Error checking for updates:', error);
-      }
     }
   </script>
   <style>
