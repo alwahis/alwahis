@@ -524,6 +524,82 @@
         overflow-x: auto;
       }
     }
+
+    .tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .tab-btn {
+      padding: 0.8rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      background: #f1f2f6;
+      color: #2d3436;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .tab-btn:hover {
+      background: #dfe6e9;
+    }
+
+    .tab-btn.active {
+      background: #2d3436;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .chat-filter {
+      margin-bottom: 1rem;
+    }
+
+    .chat-filter input {
+      width: 100%;
+      padding: 0.8rem;
+      border: 1px solid #dfe6e9;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    .chat-filter input:focus {
+      outline: none;
+      border-color: #2d3436;
+    }
+
+    #chatList {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .chat-session {
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .chat-session:hover {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .no-chats {
+      text-align: center;
+      padding: 2rem;
+      color: #636e72;
+    }
   </style>
 </head>
 <body>
@@ -539,18 +615,11 @@
   </div>
 
   <!-- Admin Panel -->
-  <div id="adminContainer" class="admin-container">
+  <div id="adminContainer" class="admin-container" style="display: none;">
     <div class="header">
       <h1>لوحة التحكم</h1>
       <button class="logout-btn" onclick="logout()">تسجيل خروج</button>
     </div>
-
-    <nav class="tabs">
-      <div class="nav-item active" data-tab="rides" onclick="showTab('rides')">الرحلات</div>
-      <div class="nav-item" data-tab="requests" onclick="showTab('requests')">الطلبات</div>
-      <div class="nav-item" data-tab="drivers" onclick="showTab('drivers')">السائقين</div>
-      <div class="nav-item" data-tab="chat" onclick="showTab('chat')">المحادثات</div>
-    </nav>
 
     <div class="stats">
       <div class="stat-card">
@@ -571,8 +640,16 @@
       </div>
     </div>
 
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('rides')">الرحلات</button>
+      <button class="tab-btn" onclick="showTab('requests')">الطلبات</button>
+      <button class="tab-btn" onclick="showTab('drivers')">السائقين</button>
+      <button class="tab-btn" onclick="showTab('chat')">المحادثات</button>
+    </div>
+
+    <!-- Rides Tab -->
     <div id="ridesTab" class="tab-content active">
-      <table>
+      <table class="rides-table">
         <thead>
           <tr>
             <th>التاريخ والوقت</th>
@@ -591,13 +668,15 @@
       </table>
     </div>
 
-    <div id="requestsTab" class="tab-content">
-      <table>
+    <!-- Requests Tab -->
+    <div id="requestsTab" class="tab-content" style="display: none;">
+      <table class="rides-table">
         <thead>
           <tr>
             <th>التاريخ</th>
+            <th>من</th>
+            <th>إلى</th>
             <th>رقم الهاتف</th>
-            <th>الرحلة</th>
             <th>المقاعد</th>
             <th>الحالة</th>
             <th>إجراءات</th>
@@ -609,17 +688,15 @@
       </table>
     </div>
 
-    <div id="driversTab" class="tab-content">
-      <table>
+    <!-- Drivers Tab -->
+    <div id="driversTab" class="tab-content" style="display: none;">
+      <table class="rides-table">
         <thead>
           <tr>
-            <th>اسم السائق</th>
             <th>رقم الهاتف</th>
-            <th>نوع السيارة</th>
-            <th>التقييم</th>
             <th>النقاط</th>
-            <th>تحكم بالنقاط</th>
-            <th>حالة الحظر</th>
+            <th>الحالة</th>
+            <th>إجراءات</th>
           </tr>
         </thead>
         <tbody id="driversTableBody">
@@ -628,18 +705,13 @@
       </table>
     </div>
 
-    <div id="chatTab" class="tab-content">
-      <div class="chat-filters">
-        <select id="chatFilter" onchange="filterChats()">
-          <option value="all">جميع المحادثات</option>
-          <option value="drivers">السائقين</option>
-          <option value="riders">الركاب</option>
-        </select>
-        <input type="text" id="chatSearch" placeholder="بحث برقم الهاتف..." oninput="filterChats()">
+    <!-- Chat Tab -->
+    <div id="chatTab" class="tab-content" style="display: none;">
+      <div class="chat-filter">
+        <input type="text" id="chatSearch" oninput="filterChats()" placeholder="بحث في المحادثات...">
       </div>
-      <div class="chats-container">
-        <div id="chatsList"></div>
-        <div id="chatMessages" class="chat-messages"></div>
+      <div id="chatList">
+        <!-- Chat sessions will be loaded here -->
       </div>
     </div>
   </div>
@@ -732,8 +804,16 @@
       localStorage.setItem('adminLoggedIn', 'true');
       localStorage.setItem('adminLoginTime', Date.now().toString());
       
-      // Show admin panel and load data
       showAdminPanel();
+    }
+
+    function logout() {
+      stopPolling();
+      localStorage.removeItem('adminLoggedIn');
+      localStorage.removeItem('adminLoginTime');
+      document.getElementById('loginContainer').style.display = 'flex';
+      document.getElementById('adminContainer').style.display = 'none';
+      document.getElementById('password').value = '';
     }
 
     function showAdminPanel() {
@@ -741,24 +821,24 @@
         document.getElementById('loginContainer').style.display = 'none';
         document.getElementById('adminContainer').style.display = 'block';
         
-        console.log('Admin panel shown, loading initial data...'); // Debug log
+        console.log('Showing admin panel...'); // Debug log
+        
+        // Initialize data state
+        lastRidesHash = '';
+        lastRequestsHash = '';
+        lastChatsHash = '';
+        lastDriversHash = '';
         
         // Load initial data
         loadAllData();
         
-        // Start polling for updates
+        // Start polling
         startPolling();
         
-        // Show the default tab (rides)
+        // Show rides tab by default
         showTab('rides');
         
-        // Log current localStorage state
-        console.log('Current localStorage state:', {
-          rides: JSON.parse(localStorage.getItem('publishedRides') || '[]'),
-          requests: JSON.parse(localStorage.getItem('rideRequests') || '[]'),
-          drivers: JSON.parse(localStorage.getItem('drivers') || '[]'),
-          chats: JSON.parse(localStorage.getItem('chatSessions') || '[]')
-        });
+        console.log('Admin panel initialized successfully'); // Debug log
       } catch (error) {
         console.error('Error showing admin panel:', error);
         alert('حدث خطأ أثناء تحميل لوحة التحكم. يرجى تحديث الصفحة.');
@@ -766,42 +846,109 @@
     }
 
     function loadAllData() {
-      console.log('Loading all data...'); // Debug log
-      
-      // Load data in sequence
-      loadRides();
-      loadRequests();
-      loadDrivers();
-      loadChats();
-      
-      // Update stats after all data is loaded
-      updateStats();
-      
-      console.log('All data loaded successfully'); // Debug log
+      try {
+        console.log('Loading all data...'); // Debug log
+        
+        loadRides();
+        loadRequests();
+        loadDrivers();
+        loadChats();
+        updateStats();
+        
+        console.log('All data loaded successfully'); // Debug log
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
     }
 
     function startPolling() {
-      if (!window.updateInterval) {
-        console.log('Starting update polling...'); // Debug log
-        window.updateInterval = setInterval(checkForUpdates, 5000);
+      try {
+        if (window.pollingInterval) {
+          clearInterval(window.pollingInterval);
+        }
+        
+        console.log('Starting polling...'); // Debug log
+        window.pollingInterval = setInterval(checkForUpdates, 5000);
+      } catch (error) {
+        console.error('Error starting polling:', error);
       }
     }
 
     function stopPolling() {
-      if (window.updateInterval) {
-        console.log('Stopping update polling...'); // Debug log
-        clearInterval(window.updateInterval);
-        window.updateInterval = null;
+      try {
+        if (window.pollingInterval) {
+          clearInterval(window.pollingInterval);
+          window.pollingInterval = null;
+          console.log('Polling stopped'); // Debug log
+        }
+      } catch (error) {
+        console.error('Error stopping polling:', error);
+      }
+    }
+
+    async function checkForUpdates() {
+      try {
+        console.log('Checking for updates...'); // Debug log
+        
+        // Get current data
+        const rides = localStorage.getItem('publishedRides') || '[]';
+        const requests = localStorage.getItem('rideRequests') || '[]';
+        const drivers = localStorage.getItem('drivers') || '[]';
+        const chats = localStorage.getItem('chatSessions') || '[]';
+        
+        // Hash the current data
+        const currentRidesHash = await sha256(rides);
+        const currentRequestsHash = await sha256(requests);
+        const currentDriversHash = await sha256(drivers);
+        const currentChatsHash = await sha256(chats);
+        
+        let hasChanges = false;
+        
+        if (currentRidesHash !== lastRidesHash) {
+          console.log('Rides updated, reloading...'); // Debug log
+          loadRides();
+          lastRidesHash = currentRidesHash;
+          hasChanges = true;
+        }
+        
+        if (currentRequestsHash !== lastRequestsHash) {
+          console.log('Requests updated, reloading...'); // Debug log
+          loadRequests();
+          lastRequestsHash = currentRequestsHash;
+          hasChanges = true;
+        }
+        
+        if (currentDriversHash !== lastDriversHash) {
+          console.log('Drivers updated, reloading...'); // Debug log
+          loadDrivers();
+          lastDriversHash = currentDriversHash;
+          hasChanges = true;
+        }
+        
+        if (currentChatsHash !== lastChatsHash) {
+          console.log('Chats updated, reloading...'); // Debug log
+          loadChats();
+          lastChatsHash = currentChatsHash;
+          hasChanges = true;
+        }
+        
+        if (hasChanges) {
+          updateStats();
+        }
+        
+        console.log('Update check complete'); // Debug log
+      } catch (error) {
+        console.error('Error checking for updates:', error);
       }
     }
 
     function loadRides() {
       try {
         let rides = localStorage.getItem('publishedRides');
-        console.log('Loading rides from localStorage:', rides); // Debug log
+        console.log('Loading rides:', rides); // Debug log
         
         if (!rides) {
-          console.log('No rides found in localStorage'); // Debug log
+          console.log('No rides found, initializing empty array...'); // Debug log
           rides = '[]';
           localStorage.setItem('publishedRides', rides);
         }
@@ -815,7 +962,7 @@
           return;
         }
         
-        if (!Array.isArray(rides) || rides.length === 0) {
+        if (rides.length === 0) {
           console.log('No rides to display'); // Debug log
           tableBody.innerHTML = `
             <tr>
@@ -870,6 +1017,7 @@
         }).join('');
         
         console.log('Rides table updated successfully'); // Debug log
+        updateStats();
       } catch (error) {
         console.error('Error loading rides:', error);
         const tableBody = document.getElementById('ridesTableBody');
@@ -1201,38 +1349,30 @@
 
     function showTab(tabName) {
       try {
-        console.log('Switching to tab:', tabName); // Debug log
-        
         // Hide all tabs
-        const tabs = document.querySelectorAll('.tab-content');
-        tabs.forEach(tab => {
+        document.querySelectorAll('.tab-content').forEach(tab => {
           tab.style.display = 'none';
-          console.log('Hiding tab:', tab.id); // Debug log
         });
         
-        // Remove active class from all nav items
-        const navItems = document.querySelectorAll('.nav-item');
-        navItems.forEach(item => item.classList.remove('active'));
+        // Remove active class from all buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+          btn.classList.remove('active');
+        });
         
         // Show selected tab
         const selectedTab = document.getElementById(tabName + 'Tab');
         if (selectedTab) {
           selectedTab.style.display = 'block';
-          console.log('Showing tab:', selectedTab.id); // Debug log
+          // Add active class to selected button
+          const selectedBtn = document.querySelector(`.tab-btn[onclick="showTab('${tabName}')"]`);
+          if (selectedBtn) {
+            selectedBtn.classList.add('active');
+          }
         } else {
-          console.error('Tab not found:', tabName + 'Tab'); // Debug log
-        }
-        
-        // Add active class to selected nav item
-        const selectedNavItem = document.querySelector(`[data-tab="${tabName}"]`);
-        if (selectedNavItem) {
-          selectedNavItem.classList.add('active');
-        } else {
-          console.error('Nav item not found:', tabName); // Debug log
+          console.error(`Tab not found: ${tabName}Tab`);
         }
         
         // Load data for the selected tab
-        console.log('Loading data for tab:', tabName); // Debug log
         switch(tabName) {
           case 'rides':
             loadRides();
@@ -1247,9 +1387,6 @@
             loadChats();
             break;
         }
-        
-        // Store active tab
-        localStorage.setItem('activeAdminTab', tabName);
       } catch (error) {
         console.error('Error showing tab:', error);
       }
@@ -1258,7 +1395,7 @@
     function loadChats() {
       try {
         const chats = JSON.parse(localStorage.getItem('chatSessions') || '[]');
-        const chatsList = document.getElementById('chatsList');
+        const chatsList = document.getElementById('chatList');
         
         if (chats.length === 0) {
           chatsList.innerHTML = '<div class="no-chats">لا توجد محادثات</div>';
@@ -1372,7 +1509,7 @@
         const searchInput = document.getElementById('chatSearch');
         const searchTerm = searchInput.value.toLowerCase();
         const chats = JSON.parse(localStorage.getItem('chatSessions') || '[]');
-        const chatsList = document.getElementById('chatsList');
+        const chatsList = document.getElementById('chatList');
         
         const filteredChats = chats.filter(chat => 
           chat.phone.toLowerCase().includes(searchTerm) ||
