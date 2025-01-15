@@ -738,22 +738,75 @@
     let lastDriversHash = '';
     let pollingInterval;
 
-    // The actual password hash (using SHA-256)
-    const ADMIN_PASSWORD_HASH = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'; // This is the hash of 'password'
-
-    // Check if already logged in and session is still valid
+    // Add test data if none exists
     document.addEventListener('DOMContentLoaded', function() {
+      console.log('Initializing admin panel...'); // Debug log
+      
+      // Test ride data
+      if (!localStorage.getItem('publishedRides')) {
+        console.log('Adding test ride data...'); // Debug log
+        const testRides = [
+          {
+            id: '1',
+            date: '2025-01-15',
+            time: '14:30',
+            from: 'بغداد',
+            to: 'البصرة',
+            phone: '07801234567',
+            price: 25000,
+            seats: 4,
+            cancelled: false
+          }
+        ];
+        localStorage.setItem('publishedRides', JSON.stringify(testRides));
+      }
+
+      // Test request data
+      if (!localStorage.getItem('rideRequests')) {
+        console.log('Adding test request data...'); // Debug log
+        const testRequests = [
+          {
+            id: '1',
+            date: '2025-01-15',
+            phone: '07801234567',
+            rideId: '1',
+            seats: 2,
+            accepted: false
+          }
+        ];
+        localStorage.setItem('rideRequests', JSON.stringify(testRequests));
+      }
+
+      // Test driver data
+      if (!localStorage.getItem('drivers')) {
+        console.log('Adding test driver data...'); // Debug log
+        const testDrivers = [
+          {
+            phone: '07801234567',
+            points: 100,
+            activeRide: null,
+            blocked: false
+          }
+        ];
+        localStorage.setItem('drivers', JSON.stringify(testDrivers));
+      }
+
+      // Check if already logged in
       const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
       const loginTime = parseInt(localStorage.getItem('adminLoginTime') || '0');
       const currentTime = new Date().getTime();
       
-      // Session expires after 24 hours
+      console.log('Login status:', { isLoggedIn, loginTime }); // Debug log
+      
       if (isLoggedIn && (currentTime - loginTime) < 24 * 60 * 60 * 1000) {
         showAdminPanel();
       } else {
-        logout(); // Clear expired session
+        logout();
       }
     });
+
+    // The actual password hash (using SHA-256)
+    const ADMIN_PASSWORD_HASH = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'; // This is the hash of 'password'
 
     async function login(event) {
       event.preventDefault();
@@ -786,10 +839,14 @@
 
     function showAdminPanel() {
       try {
+        console.log('Showing admin panel...'); // Debug log
         const isLoggedIn = localStorage.getItem('adminLoggedIn');
         const loginTime = localStorage.getItem('adminLoginTime');
         
+        console.log('Login status:', { isLoggedIn, loginTime }); // Debug log
+        
         if (!isLoggedIn || !loginTime || (Date.now() - parseInt(loginTime)) > 24 * 60 * 60 * 1000) {
+          console.log('Session expired or invalid'); // Debug log
           logout();
           return;
         }
@@ -799,6 +856,7 @@
         
         // Show the last active tab or default to rides
         const lastActiveTab = localStorage.getItem('activeAdminTab') || 'rides';
+        console.log('Showing tab:', lastActiveTab); // Debug log
         showTab(lastActiveTab);
         
         startPolling();
@@ -1118,9 +1176,14 @@
 
     function showTab(tabName) {
       try {
+        console.log('Switching to tab:', tabName); // Debug log
+        
         // Hide all tabs
         const tabs = document.querySelectorAll('.tab-content');
-        tabs.forEach(tab => tab.style.display = 'none');
+        tabs.forEach(tab => {
+          tab.style.display = 'none';
+          console.log('Hiding tab:', tab.id); // Debug log
+        });
         
         // Remove active class from all nav items
         const navItems = document.querySelectorAll('.nav-item');
@@ -1130,15 +1193,21 @@
         const selectedTab = document.getElementById(tabName + 'Tab');
         if (selectedTab) {
           selectedTab.style.display = 'block';
+          console.log('Showing tab:', selectedTab.id); // Debug log
+        } else {
+          console.error('Tab not found:', tabName + 'Tab'); // Debug log
         }
         
         // Add active class to selected nav item
         const selectedNavItem = document.querySelector(`[data-tab="${tabName}"]`);
         if (selectedNavItem) {
           selectedNavItem.classList.add('active');
+        } else {
+          console.error('Nav item not found:', tabName); // Debug log
         }
         
         // Load data for the selected tab
+        console.log('Loading data for tab:', tabName); // Debug log
         switch(tabName) {
           case 'rides':
             loadRides();
