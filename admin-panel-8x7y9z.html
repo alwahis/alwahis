@@ -741,29 +741,31 @@
         
         // Sort rides by date (newest first)
         rides.sort((a, b) => {
-          const dateA = a.rawDateTime ? new Date(a.rawDateTime) : new Date(a.date);
-          const dateB = b.rawDateTime ? new Date(b.rawDateTime) : new Date(b.date);
+          const dateA = new Date(a.rawDateTime || a.date);
+          const dateB = new Date(b.rawDateTime || b.date);
           return dateB - dateA;
         });
         
         tableBody.innerHTML = rides.map(ride => {
           const formattedDate = formatDate(ride.rawDateTime || ride.date);
           const formattedTime = ride.time ? ride.time.replace(/^(\d{1,2}:\d{2}).*$/, '$1') : '';
+          const status = ride.cancelled ? 'ملغية' : ride.driverId ? 'تم القبول' : 'نشطة';
+          const statusClass = ride.cancelled ? 'status-cancelled' : ride.driverId ? 'status-accepted' : 'status-active';
           
           return `
             <tr>
               <td>
-                <div>${formattedDate}</div>
+                <div>${formattedDate || 'غير محدد'}</div>
                 ${formattedTime ? `<div class="time">${formattedTime}</div>` : ''}
               </td>
-              <td>${ride.from || ''}</td>
-              <td>${ride.to || ''}</td>
-              <td>${ride.phone || ''}</td>
+              <td>${ride.from || 'غير محدد'}</td>
+              <td>${ride.to || 'غير محدد'}</td>
+              <td>${ride.phone || 'غير محدد'}</td>
               <td>${ride.price || 0} د.ع</td>
               <td>${ride.seats || 1}</td>
               <td>
-                <span class="status ${ride.cancelled ? 'status-cancelled' : 'status-active'}">
-                  ${ride.cancelled ? 'ملغية' : 'نشطة'}
+                <span class="status ${statusClass}">
+                  ${status}
                 </span>
               </td>
               <td>
@@ -775,10 +777,57 @@
           `;
         }).join('');
 
+        // Update the stats after loading rides
         updateStats();
       } catch (error) {
         console.error('Error loading rides:', error);
         alert('حدث خطأ أثناء تحميل الرحلات. يرجى المحاولة مرة أخرى: ' + error.message);
+      }
+    }
+
+    function deleteRide(rideId) {
+      try {
+        if (!confirm('هل أنت متأكد من حذف هذه الرحلة؟')) {
+          return;
+        }
+
+        let rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+        
+        // Find the ride
+        const rideIndex = rides.findIndex(ride => ride.id === rideId);
+        if (rideIndex === -1) {
+          alert('لم يتم العثور على الرحلة');
+          return;
+        }
+
+        // Get the ride details before deleting
+        const ride = rides[rideIndex];
+
+        // Remove from publishedRides
+        rides.splice(rideIndex, 1);
+        localStorage.setItem('publishedRides', JSON.stringify(rides));
+
+        // Update any related requests
+        let requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
+        requests = requests.filter(req => req.rideId !== rideId);
+        localStorage.setItem('rideRequests', JSON.stringify(requests));
+
+        // If the ride has a driver, update their status
+        if (ride.driverId) {
+          let drivers = JSON.parse(localStorage.getItem('drivers') || '[]');
+          const driverIndex = drivers.findIndex(d => d.phone === ride.driverId);
+          if (driverIndex !== -1) {
+            drivers[driverIndex].activeRide = null;
+            localStorage.setItem('drivers', JSON.stringify(drivers));
+          }
+        }
+
+        // Reload data
+        loadAllData();
+        alert('تم حذف الرحلة بنجاح');
+      } catch (error) {
+        console.error('Error deleting ride:', error);
+        alert('حدث خطأ أثناء حذف الرحلة: ' + error.message);
       }
     }
 
@@ -800,24 +849,6 @@
         document.getElementById('blockedCount').textContent = blockedCount;
       } catch (error) {
         console.error('Error updating stats:', error);
-      }
-    }
-
-    function deleteRide(rideId) {
-      try {
-        if (!confirm('هل أنت متأكد من حذف هذه الرحلة؟')) {
-          return;
-        }
-
-        const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-        const updatedRides = rides.filter(ride => ride.id !== rideId);
-        localStorage.setItem('publishedRides', JSON.stringify(updatedRides));
-        
-        loadRides();
-        updateStats();
-      } catch (error) {
-        console.error('Error deleting ride:', error);
-        alert('حدث خطأ أثناء حذف الرحلة. يرجى المحاولة مرة أخرى.');
       }
     }
 
@@ -1270,5 +1301,37 @@
       }
     }
   </script>
+  <style>
+    .status-accepted {
+      background-color: #27ae60;
+      color: white;
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+    .status-active {
+      background-color: #2ecc71;
+      color: white;
+    }
+    .status-cancelled {
+      background-color: #e74c3c;
+      color: white;
+    }
+    .delete-btn {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+    .delete-btn:hover {
+      background-color: #c0392b;
+    }
+  </style>
 </body>
 </html>
