@@ -613,11 +613,13 @@
       <table>
         <thead>
           <tr>
+            <th>اسم السائق</th>
             <th>رقم الهاتف</th>
+            <th>نوع السيارة</th>
+            <th>التقييم</th>
             <th>النقاط</th>
-            <th>الرحلة الحالية</th>
-            <th>الحالة</th>
-            <th>إجراءات</th>
+            <th>تحكم بالنقاط</th>
+            <th>حالة الحظر</th>
           </tr>
         </thead>
         <tbody id="driversTableBody">
@@ -807,22 +809,9 @@
         console.log('Loading rides:', rides); // Debug log
         
         if (!rides) {
-          console.log('No rides found, adding test data...'); // Debug log
-          const testRides = [
-            {
-              id: '1',
-              date: '2025-01-15',
-              time: '14:30',
-              from: 'بغداد',
-              to: 'البصرة',
-              phone: '07801234567',
-              price: 25000,
-              seats: 4,
-              cancelled: false
-            }
-          ];
-          localStorage.setItem('publishedRides', JSON.stringify(testRides));
-          rides = JSON.stringify(testRides);
+          console.log('No rides found, initializing empty array...'); // Debug log
+          rides = '[]';
+          localStorage.setItem('publishedRides', rides);
         }
         
         rides = JSON.parse(rides);
@@ -836,8 +825,8 @@
         
         // Sort rides by date (newest first)
         rides.sort((a, b) => {
-          const dateA = new Date(a.rawDateTime || a.date);
-          const dateB = new Date(b.rawDateTime || b.date);
+          const dateA = new Date(a.timestamp || a.date);
+          const dateB = new Date(b.timestamp || b.date);
           return dateB - dateA;
         });
         
@@ -853,8 +842,8 @@
         }
         
         tableBody.innerHTML = rides.map(ride => {
-          const formattedDate = formatDate(ride.rawDateTime || ride.date);
-          const formattedTime = ride.time ? ride.time.replace(/^(\d{1,2}:\d{2}).*$/, '$1') : '';
+          const formattedDate = formatDate(ride.date);
+          const formattedTime = ride.time || '';
           const status = ride.cancelled ? 'ملغية' : ride.driverId ? 'تم القبول' : 'نشطة';
           const statusClass = ride.cancelled ? 'status-cancelled' : ride.driverId ? 'status-accepted' : 'status-active';
           
@@ -875,7 +864,7 @@
                 </span>
               </td>
               <td>
-                <button class="delete-btn" onclick="deleteRide('${ride.id}')">
+                <button class="delete-btn" onclick="deleteRide('${ride.timestamp}')">
                   حذف
                 </button>
               </td>
@@ -901,7 +890,7 @@
       }
     }
 
-    function deleteRide(rideId) {
+    function deleteRide(timestamp) {
       try {
         if (!confirm('هل أنت متأكد من حذف هذه الرحلة؟')) {
           return;
@@ -910,25 +899,20 @@
         let rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
         
         // Find the ride
-        const rideIndex = rides.findIndex(ride => ride.id === rideId);
+        const rideIndex = rides.findIndex(ride => ride.timestamp === timestamp);
         if (rideIndex === -1) {
           alert('لم يتم العثور على الرحلة');
           return;
         }
 
-        // Get the ride details before deleting
+        // Get the ride before removing it
         const ride = rides[rideIndex];
 
-        // Remove from publishedRides
+        // Remove the ride
         rides.splice(rideIndex, 1);
         localStorage.setItem('publishedRides', JSON.stringify(rides));
 
-        // Update any related requests
-        let requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
-        requests = requests.filter(req => req.rideId !== rideId);
-        localStorage.setItem('rideRequests', JSON.stringify(requests));
-
-        // If the ride has a driver, update their status
+        // If the ride had a driver, update driver status
         if (ride.driverId) {
           let drivers = JSON.parse(localStorage.getItem('drivers') || '[]');
           const driverIndex = drivers.findIndex(d => d.phone === ride.driverId);
@@ -938,12 +922,19 @@
           }
         }
 
+        // Remove any requests for this ride
+        let requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
+        requests = requests.filter(req => req.rideId !== timestamp);
+        localStorage.setItem('rideRequests', JSON.stringify(requests));
+
         // Reload data
-        loadAllData();
-        alert('تم حذف الرحلة بنجاح');
+        loadRides();
+        loadRequests();
+        loadDrivers();
+        updateStats();
       } catch (error) {
         console.error('Error deleting ride:', error);
-        alert('حدث خطأ أثناء حذف الرحلة: ' + error.message);
+        alert('حدث خطأ أثناء حذف الرحلة. يرجى المحاولة مرة أخرى.');
       }
     }
 
@@ -951,18 +942,18 @@
       try {
         const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
         const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
-        const blockedDrivers = JSON.parse(localStorage.getItem('blockedDrivers') || '[]');
-        
-        const activeRides = rides.filter(ride => !ride.cancelled).length;
-        const cancelledRides = rides.filter(ride => ride.cancelled).length;
-        const uniqueDrivers = new Set(rides.map(ride => ride.phone)).size;
-        const blockedCount = blockedDrivers.length;
-        
+        const drivers = JSON.parse(localStorage.getItem('drivers') || '[]');
+        const chats = JSON.parse(localStorage.getItem('chatSessions') || '[]');
+
+        const activeRides = rides.filter(ride => !ride.cancelled && !ride.driverId).length;
+        const activeRequests = requests.filter(req => !req.fulfilled).length;
+        const activeDrivers = drivers.filter(driver => !driver.blocked).length;
+        const activeChats = chats.length;
+
         document.getElementById('activeRidesCount').textContent = activeRides;
-        document.getElementById('cancelledRidesCount').textContent = cancelledRides;
-        document.getElementById('requestsCount').textContent = requests.length;
-        document.getElementById('driversCount').textContent = uniqueDrivers;
-        document.getElementById('blockedCount').textContent = blockedCount;
+        document.getElementById('requestsCount').textContent = activeRequests;
+        document.getElementById('driversCount').textContent = activeDrivers;
+        document.getElementById('chatsCount').textContent = activeChats;
       } catch (error) {
         console.error('Error updating stats:', error);
       }
@@ -970,81 +961,73 @@
 
     function loadRequests() {
       try {
-        const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
-        const tableBody = document.getElementById('requestsTableBody');
+        let requests = localStorage.getItem('rideRequests');
+        console.log('Loading requests:', requests); // Debug log
         
+        if (!requests) {
+          console.log('No requests found, initializing empty array...'); // Debug log
+          requests = '[]';
+          localStorage.setItem('rideRequests', requests);
+        }
+        
+        requests = JSON.parse(requests);
+        console.log('Parsed requests:', requests); // Debug log
+        
+        const tableBody = document.getElementById('requestsTableBody');
+        if (!tableBody) {
+          console.error('Requests table body element not found');
+          return;
+        }
+        
+        if (requests.length === 0) {
+          tableBody.innerHTML = `
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 2rem;">
+                لا توجد طلبات حالياً
+              </td>
+            </tr>
+          `;
+          return;
+        }
+        
+        // Sort requests by date (newest first)
         requests.sort((a, b) => new Date(b.date) - new Date(a.date));
         
-        tableBody.innerHTML = requests.map(request => `
-          <tr>
-            <td>${formatDate(request.date)}</td>
-            <td>${request.phone}</td>
-            <td>${request.rideId}</td>
-            <td>${request.seats}</td>
-            <td>
-              <button class="delete-btn" onclick="deleteRequest('${request.id}')">
-                حذف
-              </button>
-            </td>
-          </tr>
-        `).join('');
+        tableBody.innerHTML = requests.map(request => {
+          const status = request.fulfilled ? 'تم القبول' : 'قيد الانتظار';
+          const statusClass = request.fulfilled ? 'status-accepted' : 'status-active';
+          
+          return `
+            <tr>
+              <td>${formatDate(request.date) || 'غير محدد'}</td>
+              <td>${request.phone || 'غير محدد'}</td>
+              <td>${request.rideId || 'غير محدد'}</td>
+              <td>${request.seats || 1}</td>
+              <td>
+                <span class="status ${statusClass}">
+                  ${status}
+                </span>
+              </td>
+              <td>
+                <button class="delete-btn" onclick="deleteRequest('${request.id}')">
+                  حذف
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
       } catch (error) {
         console.error('Error loading requests:', error);
-        alert('حدث خطأ أثناء تحميل الطلبات. يرجى تحديث الصفحة.');
-      }
-    }
-
-    function loadDrivers() {
-      try {
-        const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-        const blockedDrivers = JSON.parse(localStorage.getItem('blockedDrivers') || '[]');
-        const driverPoints = JSON.parse(localStorage.getItem('driverPoints') || '{}');
-        
-        // Get unique drivers with their ride counts
-        const driverStats = {};
-        rides.forEach(ride => {
-          if (!driverStats[ride.phone]) {
-            driverStats[ride.phone] = {
-              totalRides: 0,
-              activeRides: 0,
-              cancelledRides: 0,
-              lastRide: null,
-              points: driverPoints[ride.phone] || 0,
-              isBlocked: blockedDrivers.includes(ride.phone)
-            };
-          }
-          
-          driverStats[ride.phone].totalRides++;
-          if (ride.cancelled) {
-            driverStats[ride.phone].cancelledRides++;
-          } else {
-            driverStats[ride.phone].activeRides++;
-          }
-          
-          const rideDate = new Date(ride.rawDateTime);
-          if (!driverStats[ride.phone].lastRide || rideDate > new Date(driverStats[ride.phone].lastRide)) {
-            driverStats[ride.phone].lastRide = ride.rawDateTime;
-          }
-        });
-        
-        const tableBody = document.getElementById('driversTableBody');
-        tableBody.innerHTML = Object.entries(driverStats).map(([phone, stats]) => `
-          <tr class="${stats.isBlocked ? 'blocked-driver' : ''}">
-            <td>${phone}</td>
-            <td>${stats.points}</td>
-            <td>${formatDate(stats.lastRide)}</td>
-            <td>
-              <button 
-                class="block-btn ${stats.isBlocked ? 'unblock' : 'block'}" 
-                onclick="toggleBlockDriver('${phone}')">
-                ${stats.isBlocked ? 'فك الحظر' : 'حظر'}
-              </button>
-            </td>
-          </tr>
-        `).join('');
-      } catch (error) {
-        console.error('Error loading drivers:', error);
-        alert('حدث خطأ أثناء تحميل بيانات السائقين. يرجى تحديث الصفحة.');
+        const tableBody = document.getElementById('requestsTableBody');
+        if (tableBody) {
+          tableBody.innerHTML = `
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 2rem; color: #e74c3c;">
+                حدث خطأ أثناء تحميل الطلبات: ${error.message}
+              </td>
+            </tr>
+          `;
+        }
       }
     }
 
@@ -1054,10 +1037,20 @@
           return;
         }
 
-        const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
-        const updatedRequests = requests.filter(request => request.id !== requestId);
-        localStorage.setItem('rideRequests', JSON.stringify(updatedRequests));
+        let requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
         
+        // Find the request
+        const requestIndex = requests.findIndex(req => req.id === requestId);
+        if (requestIndex === -1) {
+          alert('لم يتم العثور على الطلب');
+          return;
+        }
+
+        // Remove the request
+        requests.splice(requestIndex, 1);
+        localStorage.setItem('rideRequests', JSON.stringify(requests));
+
+        // Reload data
         loadRequests();
         updateStats();
       } catch (error) {
@@ -1066,39 +1059,148 @@
       }
     }
 
-    function toggleBlockDriver(phone) {
+    function loadDrivers() {
       try {
-        const blockedDrivers = JSON.parse(localStorage.getItem('blockedDrivers') || '[]');
-        const isBlocked = blockedDrivers.includes(phone);
+        let drivers = localStorage.getItem('drivers');
+        console.log('Loading drivers:', drivers); // Debug log
         
-        if (isBlocked) {
-          // Unblock driver
-          const updatedBlockedDrivers = blockedDrivers.filter(p => p !== phone);
-          localStorage.setItem('blockedDrivers', JSON.stringify(updatedBlockedDrivers));
-        } else {
-          // Block driver
-          if (confirm(`هل أنت متأكد من حظر السائق برقم ${phone}؟`)) {
-            blockedDrivers.push(phone);
-            localStorage.setItem('blockedDrivers', JSON.stringify(blockedDrivers));
-            
-            // Cancel all active rides for this driver
-            const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-            const updatedRides = rides.map(ride => {
-              if (ride.phone === phone && !ride.cancelled) {
-                return { ...ride, cancelled: true };
-              }
-              return ride;
-            });
-            localStorage.setItem('publishedRides', JSON.stringify(updatedRides));
-          }
+        if (!drivers) {
+          console.log('No drivers found, initializing empty array...'); // Debug log
+          drivers = '[]';
+          localStorage.setItem('drivers', drivers);
         }
         
+        drivers = JSON.parse(drivers);
+        console.log('Parsed drivers:', drivers); // Debug log
+        
+        const tableBody = document.getElementById('driversTableBody');
+        if (!tableBody) {
+          console.error('Drivers table body element not found');
+          return;
+        }
+        
+        if (drivers.length === 0) {
+          tableBody.innerHTML = `
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 2rem;">
+                لا يوجد سائقين حالياً
+              </td>
+            </tr>
+          `;
+          return;
+        }
+        
+        // Sort drivers by registration date (newest first)
+        drivers.sort((a, b) => {
+          const dateA = new Date(a.registrationDate || 0);
+          const dateB = new Date(b.registrationDate || 0);
+          return dateB - dateA;
+        });
+        
+        tableBody.innerHTML = drivers.map(driver => {
+          const isBlocked = driver.blocked;
+          const blockBtnClass = isBlocked ? 'block-btn unblock' : 'block-btn';
+          const blockBtnText = isBlocked ? 'إلغاء الحظر' : 'حظر';
+          
+          return `
+            <tr>
+              <td>${driver.name || 'غير محدد'}</td>
+              <td>${driver.phone || 'غير محدد'}</td>
+              <td>${driver.carType || 'غير محدد'}</td>
+              <td>${driver.rating || 0}</td>
+              <td>${driver.points || 0}</td>
+              <td>
+                <div class="points-control">
+                  <input type="number" class="points-input" value="${driver.points || 0}" 
+                         onchange="updateDriverPoints('${driver.phone}', this.value)" />
+                </div>
+              </td>
+              <td>
+                <button class="${blockBtnClass}" onclick="toggleBlockDriver('${driver.phone}')">
+                  ${blockBtnText}
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (error) {
+        console.error('Error loading drivers:', error);
+        const tableBody = document.getElementById('driversTableBody');
+        if (tableBody) {
+          tableBody.innerHTML = `
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 2rem; color: #e74c3c;">
+                حدث خطأ أثناء تحميل السائقين: ${error.message}
+              </td>
+            </tr>
+          `;
+        }
+      }
+    }
+
+    function toggleBlockDriver(phone) {
+      try {
+        if (!phone) {
+          console.error('Phone number is required to block/unblock driver');
+          return;
+        }
+
+        let drivers = JSON.parse(localStorage.getItem('drivers') || '[]');
+        const driverIndex = drivers.findIndex(d => d.phone === phone);
+        
+        if (driverIndex === -1) {
+          console.error('Driver not found:', phone);
+          alert('لم يتم العثور على السائق');
+          return;
+        }
+
+        // Toggle blocked status
+        drivers[driverIndex].blocked = !drivers[driverIndex].blocked;
+        
+        // If blocking, remove any active rides
+        if (drivers[driverIndex].blocked) {
+          drivers[driverIndex].activeRide = null;
+        }
+
+        localStorage.setItem('drivers', JSON.stringify(drivers));
+        
+        // Reload data
         loadDrivers();
-        loadRides();
         updateStats();
       } catch (error) {
         console.error('Error toggling driver block status:', error);
-        alert('حدث خطأ أثناء تحديث حالة الحظر. يرجى المحاولة مرة أخرى.');
+        alert('حدث خطأ أثناء تحديث حالة السائق. يرجى المحاولة مرة أخرى.');
+      }
+    }
+
+    function updateDriverPoints(phone, points) {
+      try {
+        if (!phone) {
+          console.error('Phone number is required to update points');
+          return;
+        }
+
+        points = parseInt(points) || 0;
+        if (points < 0) points = 0;
+        
+        let drivers = JSON.parse(localStorage.getItem('drivers') || '[]');
+        const driverIndex = drivers.findIndex(d => d.phone === phone);
+        
+        if (driverIndex === -1) {
+          console.error('Driver not found:', phone);
+          alert('لم يتم العثور على السائق');
+          return;
+        }
+
+        drivers[driverIndex].points = points;
+        localStorage.setItem('drivers', JSON.stringify(drivers));
+        
+        // Reload data
+        loadDrivers();
+        updateStats();
+      } catch (error) {
+        console.error('Error updating driver points:', error);
+        alert('حدث خطأ أثناء تحديث نقاط السائق. يرجى المحاولة مرة أخرى.');
       }
     }
 
