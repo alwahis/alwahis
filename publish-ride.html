@@ -725,6 +725,7 @@
       async function publishRide(event) {
         event.preventDefault();
 
+        // Get form values
         const from = document.getElementById('fromLocation').value;
         const to = document.getElementById('toLocation').value;
         const date = document.getElementById('departureDate').value;
@@ -734,8 +735,21 @@
         const price = parseInt(document.getElementById('pricePerSeat').value);
         const phone = document.getElementById('phoneNumber').value;
         const name = document.getElementById('driverName').value;
-        const carDetails = document.getElementById('carDetails').value;
+        const carDetails = document.getElementById('carDetails').value || '';
 
+        // Form validation
+        if (!from || !to || !date || !time || !carType || !seats || !price || !phone || !name) {
+          alert('الرجاء ملء جميع الحقول المطلوبة');
+          return;
+        }
+
+        // Phone number validation
+        if (!phone.match(/^07[3-9]\d{8}$/)) {
+          alert('رقم الهاتف غير صحيح. يجب أن يبدأ بـ 07 ويتكون من 11 رقم');
+          return;
+        }
+
+        // Create ride object
         const ride = {
           from,
           to,
@@ -744,11 +758,9 @@
           car_type: carType,
           car_details: carDetails,
           total_seats: seats,
-          available_seats: seats,
           price_per_seat: price,
           driver_name: name,
-          driver_phone: phone,
-          status: 'active'
+          driver_phone: phone
         };
 
         try {
@@ -760,17 +772,17 @@
             body: JSON.stringify(ride)
           });
 
-          if (!response.ok) {
-            throw new Error('Failed to publish ride');
-          }
-
           const data = await response.json();
-          console.log('Ride published successfully:', data);
+          console.log('Response:', data);
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to publish ride');
+          }
 
           // Show success modal
           showSuccessModal(from, to, date);
         } catch (error) {
-          console.error('Error publishing ride:', error);
+          console.error('Error:', error);
           alert('حدث خطأ أثناء نشر الرحلة. الرجاء المحاولة مرة أخرى.');
         }
       }

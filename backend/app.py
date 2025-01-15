@@ -156,7 +156,18 @@ def get_ride_requests():
 @app.route('/api/rides', methods=['POST'])
 def publish_ride():
     data = request.json
+    print('Received ride data:', data)  # Debug log
+    
     try:
+        # Validate required fields
+        required_fields = ['from', 'to', 'date', 'time', 'car_type', 'total_seats', 
+                         'price_per_seat', 'driver_name', 'driver_phone']
+        
+        for field in required_fields:
+            if field not in data:
+                print(f'Missing required field: {field}')  # Debug log
+                return jsonify({'error': f'حقل {field} مطلوب'}), 400
+        
         # Create or get driver
         driver = User.query.filter_by(phone=data['driver_phone']).first()
         if not driver:
@@ -167,6 +178,9 @@ def publish_ride():
             )
             db.session.add(driver)
             db.session.commit()
+            print('Created new driver:', driver.id)  # Debug log
+        else:
+            print('Found existing driver:', driver.id)  # Debug log
         
         # Create or get car
         car = Car.query.filter_by(driver_id=driver.id).first()
@@ -179,22 +193,32 @@ def publish_ride():
             )
             db.session.add(car)
             db.session.commit()
+            print('Created new car:', car.id)  # Debug log
+        else:
+            print('Found existing car:', car.id)  # Debug log
         
         # Create ride
-        departure_time = datetime.strptime(f"{data['date']} {data['time']}", "%Y-%m-%d %H:%M")
+        try:
+            departure_time = datetime.strptime(f"{data['date']} {data['time']}", "%Y-%m-%d %H:%M")
+            print('Parsed departure time:', departure_time)  # Debug log
+        except ValueError as e:
+            print('Error parsing date/time:', str(e))  # Debug log
+            return jsonify({'error': 'صيغة التاريخ أو الوقت غير صحيحة'}), 400
+        
         new_ride = Ride(
             driver_id=driver.id,
             departure_city=data['from'],
             destination_city=data['to'],
             departure_time=departure_time,
             total_seats=data['total_seats'],
-            available_seats=data['available_seats'],
+            available_seats=data['total_seats'],
             price_per_seat=data['price_per_seat'],
             car_id=car.id,
             status='active'
         )
         db.session.add(new_ride)
         db.session.commit()
+        print('Created new ride:', new_ride.id)  # Debug log
         
         return jsonify({
             'message': 'تم نشر الرحلة بنجاح',
@@ -211,7 +235,9 @@ def publish_ride():
             }
         }), 201
     except Exception as e:
-        print('Error publishing ride:', str(e))  # For debugging
+        print('Error publishing ride:', str(e))  # Debug log
+        import traceback
+        traceback.print_exc()  # Print full error traceback
         return jsonify({'error': 'حدث خطأ في نشر الرحلة'}), 400
 
 # Admin routes
