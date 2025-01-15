@@ -74,7 +74,7 @@
       font-size: 0.9rem;
     }
 
-    .stat-card .value {
+    .stat-card p {
       color: #2d3436;
       font-size: 1.5rem;
       font-weight: 600;
@@ -247,6 +247,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
+      margin-top: 1rem;
     }
 
     th {
@@ -306,6 +307,48 @@
       background: #c0392b;
     }
 
+    .block-btn {
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9em;
+      transition: background 0.3s ease;
+    }
+
+    .block-btn:hover {
+      background: #c0392b;
+    }
+
+    .block-btn.unblock {
+      background: #2ecc71;
+    }
+
+    .block-btn.unblock:hover {
+      background: #27ae60;
+    }
+
+    .points-input {
+      width: 60px;
+      padding: 0.3rem;
+      border: 1px solid #dfe6e9;
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .points-input:focus {
+      outline: none;
+      border-color: #74b9ff;
+    }
+
+    .time {
+      font-size: 0.9em;
+      color: #636e72;
+      margin-top: 0.2rem;
+    }
+
     .chat-filters {
       display: flex;
       gap: 1rem;
@@ -345,96 +388,6 @@
       border: 1px solid #dfe6e9;
       border-radius: 6px;
       padding: 1rem;
-      overflow-y: auto;
-    }
-
-    .block-btn {
-      background: #e17055;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: all 0.3s ease;
-    }
-
-    .block-btn.blocked {
-      background: #636e72;
-    }
-
-    .block-btn:hover {
-      opacity: 0.9;
-    }
-
-    .status-blocked {
-      background: #ffe3e3;
-      color: #e17055;
-      padding: 0.3rem 0.8rem;
-      border-radius: 4px;
-      font-size: 0.9rem;
-    }
-
-    .points-control {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .points-label {
-      color: #2d3436;
-      font-size: 0.9rem;
-    }
-
-    .points-input {
-      width: 60px;
-      padding: 0.3rem;
-      border: 1px solid #dfe6e9;
-      border-radius: 4px;
-      text-align: center;
-    }
-
-    .points-warning {
-      color: #e17055;
-      font-size: 0.9rem;
-      margin-top: 0.5rem;
-    }
-
-    .chat-list {
-      display: grid;
-      grid-template-columns: 300px 1fr;
-      gap: 1rem;
-      height: 70vh;
-    }
-
-    .chat-filters {
-      background: white;
-      padding: 1rem;
-      border-radius: 10px;
-      margin-bottom: 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .chat-filters select,
-    .chat-filters input {
-      padding: 0.8rem;
-      border: 1px solid #dfe6e9;
-      border-radius: 8px;
-      font-size: 0.9rem;
-    }
-
-    .chats-container {
-      display: grid;
-      grid-template-columns: 300px 1fr;
-      gap: 1rem;
-      height: 100%;
-    }
-
-    #chatsList {
-      background: white;
-      border-radius: 10px;
       overflow-y: auto;
     }
 
@@ -602,130 +555,89 @@
     <div class="stats">
       <div class="stat-card">
         <h3>عدد الرحلات النشطة</h3>
-        <div id="activeRidesCount" class="value">0</div>
+        <p id="activeRidesCount">0</p>
       </div>
       <div class="stat-card">
-        <h3>عدد الرحلات الملغية</h3>
-        <div id="cancelledRidesCount" class="value">0</div>
-      </div>
-      <div class="stat-card">
-        <h3>عدد طلبات الركاب</h3>
-        <div id="requestsCount" class="value">0</div>
+        <h3>عدد الطلبات</h3>
+        <p id="requestsCount">0</p>
       </div>
       <div class="stat-card">
         <h3>عدد السائقين</h3>
-        <div id="driversCount" class="value">0</div>
+        <p id="driversCount">0</p>
       </div>
       <div class="stat-card">
-        <h3>عدد السائقين المحظورين</h3>
-        <div id="blockedCount" class="value">0</div>
+        <h3>عدد المحادثات</h3>
+        <p id="chatsCount">0</p>
       </div>
     </div>
 
     <div id="ridesTab" class="tab-content active">
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="ابحث عن رقم هاتف أو مدينة..." oninput="filterRides()">
-        <div class="filters">
-          <select id="statusFilter" onchange="filterRides()">
-            <option value="all">كل الحالات</option>
-            <option value="active">نشطة</option>
-            <option value="cancelled">ملغية</option>
-          </select>
-          <select id="dateFilter" onchange="filterRides()">
-            <option value="all">كل التواريخ</option>
-            <option value="today">اليوم</option>
-            <option value="tomorrow">غداً</option>
-            <option value="week">هذا الأسبوع</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="rides-table">
-        <table>
-          <thead>
-            <tr>
-              <th>التاريخ</th>
-              <th>من</th>
-              <th>إلى</th>
-              <th>السائق</th>
-              <th>السعر</th>
-              <th>المقاعد</th>
-              <th>الحالة</th>
-              <th>إجراءات</th>
-            </tr>
-          </thead>
-          <tbody id="ridesTableBody">
-            <!-- Rides will be loaded here -->
-          </tbody>
-        </table>
-      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>التاريخ والوقت</th>
+            <th>من</th>
+            <th>إلى</th>
+            <th>رقم الهاتف</th>
+            <th>السعر</th>
+            <th>المقاعد</th>
+            <th>الحالة</th>
+            <th>إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="ridesTableBody">
+          <!-- Rides will be loaded here -->
+        </tbody>
+      </table>
     </div>
 
     <div id="requestsTab" class="tab-content">
-      <div class="search-box">
-        <input type="text" id="requestSearchInput" placeholder="ابحث في طلبات الركاب..." oninput="filterRequests()">
-      </div>
-
-      <div class="rides-table">
-        <table>
-          <thead>
-            <tr>
-              <th>التاريخ</th>
-              <th>من</th>
-              <th>إلى</th>
-              <th>رقم الراكب</th>
-              <th>المقاعد</th>
-              <th>نوع الحجز</th>
-              <th>إجراءات</th>
-            </tr>
-          </thead>
-          <tbody id="requestsTableBody">
-            <!-- Requests will be loaded here -->
-          </tbody>
-        </table>
-      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>التاريخ</th>
+            <th>رقم الهاتف</th>
+            <th>الرحلة</th>
+            <th>المقاعد</th>
+            <th>الحالة</th>
+            <th>إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="requestsTableBody">
+          <!-- Requests will be loaded here -->
+        </tbody>
+      </table>
     </div>
 
     <div id="driversTab" class="tab-content">
-      <div class="search-box">
-        <input type="text" id="driverSearchInput" placeholder="ابحث عن سائق..." oninput="filterDrivers()">
-      </div>
-
-      <div class="rides-table">
-        <table>
-          <thead>
-            <tr>
-              <th>رقم السائق</th>
-              <th>عدد الرحلات</th>
-              <th>الرحلات النشطة</th>
-              <th>الرحلات الملغية</th>
-              <th>أخر رحلة</th>
-              <th>النقاط</th>
-              <th>إجراءات</th>
-            </tr>
-          </thead>
-          <tbody id="driversTableBody">
-            <!-- Drivers will be loaded here -->
-          </tbody>
-        </table>
-      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>رقم الهاتف</th>
+            <th>النقاط</th>
+            <th>الرحلة الحالية</th>
+            <th>الحالة</th>
+            <th>إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="driversTableBody">
+          <!-- Drivers will be loaded here -->
+        </tbody>
+      </table>
     </div>
 
     <div id="chatTab" class="tab-content">
-      <div class="chat-list">
-        <div class="chat-filters">
-          <select id="chatFilter" onchange="filterChats()">
-            <option value="all">جميع المحادثات</option>
-            <option value="drivers">السائقين</option>
-            <option value="riders">الركاب</option>
-          </select>
-          <input type="text" id="chatSearch" placeholder="بحث برقم الهاتف..." oninput="filterChats()">
-        </div>
-
-        <div class="chats-container">
-          <div id="chatsList"></div>
-          <div id="chatMessages" class="chat-messages"></div>
-        </div>
+      <div class="chat-filters">
+        <select id="chatFilter" onchange="filterChats()">
+          <option value="all">جميع المحادثات</option>
+          <option value="drivers">السائقين</option>
+          <option value="riders">الركاب</option>
+        </select>
+        <input type="text" id="chatSearch" placeholder="بحث برقم الهاتف..." oninput="filterChats()">
+      </div>
+      <div class="chats-container">
+        <div id="chatsList"></div>
+        <div id="chatMessages" class="chat-messages"></div>
       </div>
     </div>
   </div>
@@ -892,11 +804,29 @@
     function loadRides() {
       try {
         let rides = localStorage.getItem('publishedRides');
+        console.log('Loading rides:', rides); // Debug log
+        
         if (!rides) {
-          rides = '[]';
-          localStorage.setItem('publishedRides', rides);
+          console.log('No rides found, adding test data...'); // Debug log
+          const testRides = [
+            {
+              id: '1',
+              date: '2025-01-15',
+              time: '14:30',
+              from: 'بغداد',
+              to: 'البصرة',
+              phone: '07801234567',
+              price: 25000,
+              seats: 4,
+              cancelled: false
+            }
+          ];
+          localStorage.setItem('publishedRides', JSON.stringify(testRides));
+          rides = JSON.stringify(testRides);
         }
+        
         rides = JSON.parse(rides);
+        console.log('Parsed rides:', rides); // Debug log
         
         const tableBody = document.getElementById('ridesTableBody');
         if (!tableBody) {
@@ -910,6 +840,17 @@
           const dateB = new Date(b.rawDateTime || b.date);
           return dateB - dateA;
         });
+        
+        if (rides.length === 0) {
+          tableBody.innerHTML = `
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 2rem;">
+                لا توجد رحلات حالياً
+              </td>
+            </tr>
+          `;
+          return;
+        }
         
         tableBody.innerHTML = rides.map(ride => {
           const formattedDate = formatDate(ride.rawDateTime || ride.date);
@@ -944,9 +885,19 @@
 
         // Update the stats after loading rides
         updateStats();
+        console.log('Rides loaded successfully'); // Debug log
       } catch (error) {
         console.error('Error loading rides:', error);
-        alert('حدث خطأ أثناء تحميل الرحلات. يرجى المحاولة مرة أخرى: ' + error.message);
+        const tableBody = document.getElementById('ridesTableBody');
+        if (tableBody) {
+          tableBody.innerHTML = `
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 2rem; color: #e74c3c;">
+                حدث خطأ أثناء تحميل الرحلات: ${error.message}
+              </td>
+            </tr>
+          `;
+        }
       }
     }
 
@@ -1027,9 +978,8 @@
         tableBody.innerHTML = requests.map(request => `
           <tr>
             <td>${formatDate(request.date)}</td>
-            <td>${request.from}</td>
-            <td>${request.to}</td>
             <td>${request.phone}</td>
+            <td>${request.rideId}</td>
             <td>${request.seats}</td>
             <td>
               <button class="delete-btn" onclick="deleteRequest('${request.id}')">
@@ -1081,18 +1031,8 @@
         tableBody.innerHTML = Object.entries(driverStats).map(([phone, stats]) => `
           <tr class="${stats.isBlocked ? 'blocked-driver' : ''}">
             <td>${phone}</td>
-            <td>${stats.totalRides}</td>
-            <td>${stats.activeRides}</td>
-            <td>${stats.cancelledRides}</td>
+            <td>${stats.points}</td>
             <td>${formatDate(stats.lastRide)}</td>
-            <td>
-              <input type="number" 
-                     class="points-input" 
-                     value="${stats.points}"
-                     onchange="updatePoints('${phone}', this.value)"
-                     min="0"
-                     max="100">
-            </td>
             <td>
               <button 
                 class="block-btn ${stats.isBlocked ? 'unblock' : 'block'}" 
@@ -1105,18 +1045,6 @@
       } catch (error) {
         console.error('Error loading drivers:', error);
         alert('حدث خطأ أثناء تحميل بيانات السائقين. يرجى تحديث الصفحة.');
-      }
-    }
-
-    function updatePoints(phone, points) {
-      try {
-        const driverPoints = JSON.parse(localStorage.getItem('driverPoints') || '{}');
-        driverPoints[phone] = parseInt(points) || 0;
-        localStorage.setItem('driverPoints', JSON.stringify(driverPoints));
-        loadDrivers();
-      } catch (error) {
-        console.error('Error updating points:', error);
-        alert('حدث خطأ أثناء تحديث النقاط. يرجى المحاولة مرة أخرى.');
       }
     }
 
