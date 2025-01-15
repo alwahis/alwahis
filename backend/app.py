@@ -1,26 +1,26 @@
 from flask import Flask, jsonify, request
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
 
 app = Flask(__name__)
-
-# Enable CORS for all routes
-CORS(app, resources={
-    r"/api/*": {
-        "origins": ["https://alwahis.netlify.app", "http://localhost:5000"],
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
-    }
-})
+CORS(app)
 
 # Configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///alwahis.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///alwahis.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_key')
 
 db = SQLAlchemy(app)
+
+# Enable CORS after SQLAlchemy initialization
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', '*')
+    response.headers.add('Access-Control-Allow-Methods', '*')
+    return response
 
 # Models
 class User(db.Model):
@@ -169,92 +169,95 @@ def get_ride_requests():
     except Exception as e:
         return jsonify({'error': 'حدث خطأ في جلب طلبات الرحلات'}), 400
 
-@app.route('/api/rides', methods=['POST'])
-def publish_ride():
-    data = request.json
-    print('Received ride data:', data)  # Debug log
-    
-    try:
-        # Validate required fields
-        required_fields = ['from', 'to', 'date', 'time', 'car_type', 'total_seats', 
-                         'price_per_seat', 'driver_name', 'driver_phone']
-        
-        for field in required_fields:
-            if field not in data:
-                print(f'Missing required field: {field}')  # Debug log
-                return jsonify({'error': f'حقل {field} مطلوب'}), 400
-        
-        # Create or get driver
-        driver = User.query.filter_by(phone=data['driver_phone']).first()
-        if not driver:
-            driver = User(
-                name=data['driver_name'],
-                phone=data['driver_phone'],
-                user_type='driver'
-            )
-            db.session.add(driver)
-            db.session.commit()
-            print('Created new driver:', driver.id)  # Debug log
-        else:
-            print('Found existing driver:', driver.id)  # Debug log
-        
-        # Create or get car
-        car = Car.query.filter_by(driver_id=driver.id).first()
-        if not car:
-            car = Car(
-                driver_id=driver.id,
-                car_type=data['car_type'],
-                car_details=data.get('car_details', ''),
-                photo_url='https://example.com/default-car.jpg'  # Default photo
-            )
-            db.session.add(car)
-            db.session.commit()
-            print('Created new car:', car.id)  # Debug log
-        else:
-            print('Found existing car:', car.id)  # Debug log
-        
-        # Create ride
+@app.route('/api/rides', methods=['GET', 'POST'])
+def rides():
+    if request.method == 'GET':
         try:
+            rides = Ride.query.all()
+            return jsonify({
+                'message': 'تم جلب الرحلات بنجاح',
+                'rides': [{
+                    'id': ride.id,
+                    'from': ride.departure_city,
+                    'to': ride.destination_city,
+                    'departure_time': ride.departure_time.isoformat(),
+                    'total_seats': ride.total_seats,
+                    'available_seats': ride.available_seats,
+                    'price_per_seat': ride.price_per_seat,
+                    'status': ride.status,
+                    'driver': {
+                        'name': ride.driver.name,
+                        'phone': ride.driver.phone
+                    } if ride.driver else None
+                } for ride in rides]
+            }), 200
+        except Exception as e:
+            print('Error fetching rides:', str(e))
+            return jsonify({'error': 'حدث خطأ في جلب الرحلات'}), 500
+    else:  # POST
+        try:
+            data = request.json
+            print('Received ride data:', data)
+
+            # Create or get driver
+            driver = User.query.filter_by(phone=data['driver_phone']).first()
+            if not driver:
+                driver = User(
+                    name=data['driver_name'],
+                    phone=data['driver_phone'],
+                    user_type='driver'
+                )
+                db.session.add(driver)
+                db.session.commit()
+
+            # Create or get car
+            car = Car.query.filter_by(driver_id=driver.id).first()
+            if not car:
+                car = Car(
+                    driver_id=driver.id,
+                    car_type=data['car_type'],
+                    car_details=data.get('car_details', ''),
+                    photo_url='default.jpg'
+                )
+                db.session.add(car)
+                db.session.commit()
+
+            # Parse date and time
             departure_time = datetime.strptime(f"{data['date']} {data['time']}", "%Y-%m-%d %H:%M")
-            print('Parsed departure time:', departure_time)  # Debug log
-        except ValueError as e:
-            print('Error parsing date/time:', str(e))  # Debug log
-            return jsonify({'error': 'صيغة التاريخ أو الوقت غير صحيحة'}), 400
-        
-        new_ride = Ride(
-            driver_id=driver.id,
-            departure_city=data['from'],
-            destination_city=data['to'],
-            departure_time=departure_time,
-            total_seats=data['total_seats'],
-            available_seats=data['total_seats'],
-            price_per_seat=data['price_per_seat'],
-            car_id=car.id,
-            status='active'
-        )
-        db.session.add(new_ride)
-        db.session.commit()
-        print('Created new ride:', new_ride.id)  # Debug log
-        
-        return jsonify({
-            'message': 'تم نشر الرحلة بنجاح',
-            'ride': {
-                'id': new_ride.id,
-                'from': new_ride.departure_city,
-                'to': new_ride.destination_city,
-                'date': new_ride.departure_time.strftime('%Y-%m-%d'),
-                'time': new_ride.departure_time.strftime('%H:%M'),
-                'driver': {
-                    'name': driver.name,
-                    'phone': driver.phone
+
+            # Create ride
+            ride = Ride(
+                driver_id=driver.id,
+                departure_city=data['from'],
+                destination_city=data['to'],
+                departure_time=departure_time,
+                total_seats=int(data['total_seats']),
+                available_seats=int(data['total_seats']),
+                price_per_seat=int(data['price_per_seat']),
+                car_id=car.id,
+                status='active'
+            )
+            db.session.add(ride)
+            db.session.commit()
+
+            return jsonify({
+                'message': 'تم نشر الرحلة بنجاح',
+                'ride': {
+                    'id': ride.id,
+                    'from': ride.departure_city,
+                    'to': ride.destination_city,
+                    'date': ride.departure_time.strftime('%Y-%m-%d'),
+                    'time': ride.departure_time.strftime('%H:%M'),
+                    'driver': {
+                        'name': driver.name,
+                        'phone': driver.phone
+                    }
                 }
-            }
-        }), 201
-    except Exception as e:
-        print('Error publishing ride:', str(e))  # Debug log
-        import traceback
-        traceback.print_exc()  # Print full error traceback
-        return jsonify({'error': 'حدث خطأ في نشر الرحلة'}), 400
+            }), 201
+
+        except Exception as e:
+            print('Error publishing ride:', str(e))
+            return jsonify({'error': 'حدث خطأ في نشر الرحلة'}), 500
 
 # Admin routes
 @app.route('/api/admin/rides', methods=['GET'])
