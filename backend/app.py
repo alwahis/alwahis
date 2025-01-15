@@ -5,7 +5,15 @@ from datetime import datetime
 import os
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+# Enable CORS for all routes
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["https://alwahis.netlify.app", "http://localhost:5000"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 # Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///alwahis.db'
@@ -58,6 +66,14 @@ class RideRequest(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # Routes
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({
+        'status': 'healthy',
+        'database': 'connected' if db.engine.pool.checkedout() == 0 else 'error',
+        'timestamp': datetime.now().isoformat()
+    })
+
 @app.route('/api/drivers/rides', methods=['POST'])
 def create_ride():
     data = request.json
