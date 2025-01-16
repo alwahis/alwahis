@@ -911,175 +911,99 @@
         document.getElementById('departureTime').value = `${hours}:${minutes}`;
       });
 
-      async function publishRide(event) {
+      function publishRide(event) {
         event.preventDefault();
-
-        // Get form values
-        const from = document.getElementById('fromLocation').value;
-        const to = document.getElementById('toLocation').value;
-        const date = document.getElementById('departureDate').value;
-        const time = document.getElementById('departureTime').value;
-        const carType = document.getElementById('carType').value;
-        const seats = parseInt(document.getElementById('availableSeats').value);
-        const price = parseInt(document.getElementById('pricePerSeat').value);
-        const phone = document.getElementById('phoneNumber').value;
-        const name = document.getElementById('driverName').value;
-        const carDetails = document.getElementById('carDetails').value || '';
-
-        // Form validation
-        if (!from || !to || !date || !time || !carType || !seats || !price || !phone || !name) {
-          alert('الرجاء ملء جميع الحقول المطلوبة');
-          return;
-        }
-
-        // Phone number validation
-        if (!phone.match(/^07[3-9]\d{8}$/)) {
-          alert('رقم الهاتف غير صحيح. يجب أن يبدأ بـ 07 ويتكون من 11 رقم');
-          return;
-        }
-
-        // Create ride object
-        const ride = {
-          id: Date.now(),
-          from,
-          to,
-          date,
-          time,
-          car_type: carType,
-          car_details: carDetails,
-          total_seats: seats,
-          available_seats: seats,
-          price_per_seat: price,
-          driver_name: name,
-          driver_phone: phone,
-          status: 'active'
+        const form = event.target;
+        
+        const rideData = {
+          id: Date.now().toString(),
+          from: form.querySelector('#fromLocation').value,
+          to: form.querySelector('#toLocation').value,
+          date: form.querySelector('#departureDate').value,
+          price_per_seat: parseInt(form.querySelector('#pricePerSeat').value),
+          available_seats: parseInt(form.querySelector('#availableSeats').value),
+          car_type: form.querySelector('#carType').value,
+          driver_phone: form.querySelector('#phoneNumber').value,
+          status: 'active',
+          created_at: new Date().toISOString()
         };
 
-        try {
-          // Get existing rides from localStorage
-          const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-          
-          // Add new ride
-          rides.push(ride);
-          
-          // Save back to localStorage
-          localStorage.setItem('publishedRides', JSON.stringify(rides));
+        // Save to localStorage
+        const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+        rides.push(rideData);
+        localStorage.setItem('publishedRides', JSON.stringify(rides));
 
-          // Show success modal
-          showSuccessModal(from, to, date);
-          
-          // Reset form
-          event.target.reset();
-        } catch (error) {
-          console.error('Error publishing ride:', error);
-          alert('حدث خطأ أثناء نشر الرحلة. الرجاء المحاولة مرة أخرى.');
-        }
+        // Find matching requests
+        const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
+        const matchingRequests = requests.filter(request => 
+          request.departure_city === rideData.from &&
+          request.destination_city === rideData.to &&
+          request.desired_date === rideData.date &&
+          request.seats_needed <= rideData.available_seats &&
+          request.status === 'pending' &&
+          (!request.preferred_car_type || request.preferred_car_type === rideData.car_type)
+        );
+
+        showSuccessModal(matchingRequests);
       }
 
-      async function showSuccessModal(from, to, date) {
+      function showSuccessModal(matchingRequests) {
         const modal = document.getElementById('successModal');
-        const successMessage = document.getElementById('successMessage');
-        const matchingRequests = document.getElementById('matchingRequests');
+        const modalContent = document.querySelector('.modal-content');
         
-        successMessage.textContent = `تم نشر رحلتك من ${from} إلى ${to} بتاريخ ${date} بنجاح`;
-        
-        modal.style.display = 'flex';
-        
-        // Fetch matching requests
-        fetch('/api/drivers/matching-requests', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            departure_city: from,
-            destination_city: to,
-            departure_time: date
-          })
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (!data.matching_requests || data.matching_requests.length === 0) {
-            matchingRequests.innerHTML = `
-              <div class="no-requests">
-                <i class="fas fa-search"></i>
-                <p>لا توجد طلبات مطابقة حالياً</p>
-              </div>
-            `;
-            return;
-          }
-          
-          matchingRequests.innerHTML = `
-            <h3>طلبات الركاب المطابقة (${data.count})</h3>
-            <div class="requests-list">
-              ${data.matching_requests.map(request => `
-                <div class="request-card">
-                  <div class="request-header">
-                    <div class="route-info">
-                      <span>${request.departure_city}</span>
-                      <i class="fas fa-arrow-left"></i>
-                      <span>${request.destination_city}</span>
-                    </div>
-                    <div class="seats-info">
-                      <i class="fas fa-users"></i>
-                      <span>${request.seats_needed} مقاعد</span>
-                    </div>
-                  </div>
-                  
-                  <div class="request-details">
-                    <div class="detail-item">
-                      <i class="fas fa-calendar"></i>
-                      <span>${formatDate(request.desired_date)}</span>
-                    </div>
-                    ${request.preferred_car_type ? `
-                      <div class="detail-item">
-                        <i class="fas fa-car"></i>
-                        <span>${request.preferred_car_type === 'suv' ? 'دفع رباعي' : 'صالون'}</span>
+        let requestsHtml = '';
+        if (matchingRequests && matchingRequests.length > 0) {
+          requestsHtml = `
+            <div class="matching-requests">
+              <h3>طلبات رحلات مطابقة</h3>
+              <div class="requests-list">
+                ${matchingRequests.map(request => `
+                  <div class="request-card">
+                    <div class="request-details">
+                      <div class="route-info">
+                        <span>${request.departure_city}</span>
+                        <i class="fas fa-arrow-left"></i>
+                        <span>${request.destination_city}</span>
                       </div>
-                    ` : ''}
-                    ${request.full_car_booking ? `
-                      <div class="detail-item full-booking">
-                        <i class="fas fa-car-side"></i>
-                        <span>حجز السيارة كاملة</span>
+                      <div class="seats-info">
+                        <i class="fas fa-users"></i>
+                        <span>${request.seats_needed} مقاعد</span>
                       </div>
-                    ` : ''}
-                  </div>
-                  
-                  <div class="request-actions">
-                    <button onclick="contactRider('${request.rider_phone}', '${from}', '${to}', '${date}')" class="contact-btn">
-                      <i class="fas fa-phone"></i>
-                      اتصل بالراكب
+                      ${request.preferred_car_type ? `
+                        <div class="car-type">
+                          <i class="fas fa-car"></i>
+                          <span>${request.preferred_car_type === 'suv' ? 'دفع رباعي' : 'صالون'}</span>
+                        </div>
+                      ` : ''}
+                    </div>
+                    <button onclick="contactRider('${request.rider_phone}', '${request.departure_city}', '${request.destination_city}', '${request.desired_date}')" class="contact-btn">
+                      <i class="fab fa-whatsapp"></i>
+                      تواصل مع الراكب
                     </button>
                   </div>
-                </div>
-              `).join('')}
+                `).join('')}
+              </div>
             </div>
           `;
-        })
-        .catch(error => {
-          matchingRequests.innerHTML = `
-            <div class="error-message">
-              <i class="fas fa-exclamation-circle"></i>
-              <p>حدث خطأ في جلب الطلبات المطابقة</p>
-            </div>
-          `;
-          console.error('Error:', error);
-        });
+        }
+
+        modalContent.innerHTML = `
+          <h2>تم نشر رحلتك بنجاح!</h2>
+          <p>سيتم إشعارك عند حجز مقاعد في رحلتك</p>
+          ${requestsHtml}
+          <div class="modal-actions">
+            <button onclick="closeModal()" class="close-btn">إغلاق</button>
+            <a href="my-rides.html" class="view-rides-btn">عرض رحلاتي</a>
+          </div>
+        `;
+        
+        modal.style.display = 'flex';
       }
 
       function contactRider(phone, from, to, date) {
-        const message = encodeURIComponent(`السلام عليكم، لدي رحلة من ${from} إلى ${to} بتاريخ ${formatDate(date)}`);
+        const message = encodeURIComponent(`السلام عليكم، لدي رحلة من ${from} إلى ${to} بتاريخ ${date}`);
         const formattedPhone = formatPhone(phone);
         window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
-      }
-
-      function formatDate(dateStr) {
-        const date = new Date(dateStr);
-        return new Intl.DateTimeFormat('ar-IQ', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        }).format(date);
       }
 
       function formatPhone(phone) {
@@ -1089,7 +1013,7 @@
         return phone;
       }
 
-      function closeSuccessModal() {
+      function closeModal() {
         document.getElementById('successModal').style.display = 'none';
         document.getElementById('publishForm').reset();
       }
@@ -1098,7 +1022,7 @@
       window.onclick = function(event) {
         const modal = document.getElementById('successModal');
         if (event.target === modal) {
-          closeSuccessModal();
+          closeModal();
         }
       };
 
