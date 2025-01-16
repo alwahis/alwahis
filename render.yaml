@@ -5,9 +5,10 @@ services:
     buildCommand: |
       pip install -r requirements.txt
       pip install -e .
+      cp alwahis/routes.py app.py
     startCommand: |
       python3 -c "from alwahis import app, db; app.app_context().push(); db.create_all()"
-      gunicorn wsgi:app --log-level debug --workers=2 --threads=4 --timeout=60
+      gunicorn app:app --log-level debug --workers=2 --threads=4 --timeout=60
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
