@@ -1,22 +1,26 @@
 from flask import Flask, jsonify, request
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 
 app = Flask(__name__)
 
-# Enable CORS for all routes
+# Enable CORS for all routes with all origins
 CORS(app, resources={
     r"/*": {
-        "origins": "*",
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Accept"]
+        "origins": ["https://alwahis.netlify.app", "http://localhost:5000"],
+        "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
     }
 })
 
 # Configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///alwahis.db')
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL or 'sqlite:///alwahis.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_key')
 
@@ -66,18 +70,14 @@ class RideRequest(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # Routes
-@app.route('/health', methods=['GET'])
+@app.route('/health')
 def health_check():
-    return jsonify({
-        'status': 'healthy',
-        'database': 'connected' if db.engine.pool.checkedout() == 0 else 'error',
-        'timestamp': datetime.now().isoformat()
-    })
+    return jsonify({'status': 'healthy', 'message': 'Server is running'}), 200
 
 @app.route('/api/drivers/rides', methods=['POST'])
 def create_ride():
-    data = request.json
     try:
+        data = request.json
         new_ride = Ride(
             driver_id=data['driver_id'],
             departure_city=data['departure_city'],
@@ -92,47 +92,58 @@ def create_ride():
         db.session.commit()
         return jsonify({'message': 'تم إنشاء الرحلة بنجاح', 'ride_id': new_ride.id}), 201
     except Exception as e:
-        return jsonify({'error': 'حدث خطأ في إنشاء الرحلة'}), 400
+        print(f"Error in create_ride: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/rides/search', methods=['POST'])
 def search_rides():
-    data = request.json
     try:
-        rides = Ride.query.filter_by(
-            departure_city=data['departure_city'],
-            destination_city=data['destination_city'],
-            status='active'
-        ).filter(
-            Ride.departure_time >= datetime.fromisoformat(data['date']),
-            Ride.available_seats >= data['seats_needed']
+        data = request.get_json()
+        departure_city = data.get('departure_city')
+        destination_city = data.get('destination_city')
+        date = data.get('date')
+        seats_needed = data.get('seats_needed', 1)
+
+        if not all([departure_city, destination_city, date]):
+            return jsonify({'error': 'Missing required fields'}), 400
+
+        # Convert date string to datetime
+        try:
+            search_date = datetime.strptime(date, '%Y-%m-%d')
+        except ValueError:
+            return jsonify({'error': 'Invalid date format'}), 400
+
+        # Query rides
+        rides = Ride.query.filter(
+            Ride.departure_city == departure_city,
+            Ride.destination_city == destination_city,
+            Ride.departure_time >= search_date,
+            Ride.departure_time < search_date + timedelta(days=1),
+            Ride.available_seats >= seats_needed,
+            Ride.status == 'active'
         ).all()
-        
-        if not rides:
-            return jsonify({'message': 'لا توجد رحلات متاحة', 'rides': []}), 200
-            
-        rides_data = []
-        for ride in rides:
-            car = Car.query.get(ride.car_id)
-            driver = User.query.get(ride.driver_id)
-            rides_data.append({
+
+        return jsonify({
+            'rides': [{
                 'id': ride.id,
                 'departure_city': ride.departure_city,
                 'destination_city': ride.destination_city,
                 'departure_time': ride.departure_time.isoformat(),
                 'available_seats': ride.available_seats,
                 'price_per_seat': ride.price_per_seat,
-                'car_type': car.car_type,
-                'car_photo': car.photo_url,
-                'driver_phone': driver.phone
-            })
-        return jsonify({'rides': rides_data}), 200
+                'car_type': ride.car_type,
+                'driver_phone': ride.driver_phone
+            } for ride in rides]
+        }), 200
+
     except Exception as e:
-        return jsonify({'error': 'حدث خطأ في البحث عن الرحلات'}), 400
+        print(f"Error in search_rides: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/riders/requests', methods=['POST'])
 def create_ride_request():
-    data = request.json
     try:
+        data = request.json
         new_request = RideRequest(
             rider_id=data['rider_id'],
             departure_city=data['departure_city'],
@@ -146,7 +157,8 @@ def create_ride_request():
         db.session.commit()
         return jsonify({'message': 'تم إنشاء الطلب بنجاح', 'request_id': new_request.id}), 201
     except Exception as e:
-        return jsonify({'error': 'حدث خطأ في إنشاء الطلب'}), 400
+        print(f"Error in create_ride_request: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/drivers/requests', methods=['GET'])
 def get_ride_requests():
@@ -167,7 +179,8 @@ def get_ride_requests():
             })
         return jsonify({'requests': requests_data}), 200
     except Exception as e:
-        return jsonify({'error': 'حدث خطأ في جلب طلبات الرحلات'}), 400
+        print(f"Error in get_ride_requests: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/rides', methods=['GET', 'POST'])
 def rides():
@@ -192,8 +205,8 @@ def rides():
                 } for ride in rides]
             }), 200
         except Exception as e:
-            print('Error fetching rides:', str(e))
-            return jsonify({'error': 'حدث خطأ في جلب الرحلات'}), 500
+            print(f"Error in rides: {str(e)}")
+            return jsonify({'error': 'Internal server error'}), 500
     else:  # POST
         try:
             data = request.json
@@ -256,8 +269,8 @@ def rides():
             }), 201
 
         except Exception as e:
-            print('Error publishing ride:', str(e))
-            return jsonify({'error': 'حدث خطأ في نشر الرحلة'}), 500
+            print(f"Error in rides: {str(e)}")
+            return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/drivers/matching-requests', methods=['POST'])
 def get_matching_requests():
@@ -296,7 +309,8 @@ def get_matching_requests():
             'count': len(requests_data)
         }), 200
     except Exception as e:
-        return jsonify({'error': 'حدث خطأ في البحث عن الطلبات المطابقة'}), 400
+        print(f"Error in get_matching_requests: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 # Admin routes
 @app.route('/api/admin/rides', methods=['GET'])
@@ -329,7 +343,8 @@ def get_all_rides():
             })
         return jsonify({'rides': rides_data}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error in get_all_rides: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/admin/rides/<int:ride_id>', methods=['DELETE'])
 def delete_ride(ride_id):
@@ -339,7 +354,8 @@ def delete_ride(ride_id):
         db.session.commit()
         return jsonify({'message': 'تم حذف الرحلة بنجاح'}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error in delete_ride: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/admin/stats', methods=['GET'])
 def get_admin_stats():
@@ -356,7 +372,8 @@ def get_admin_stats():
             'total_drivers': total_drivers
         }), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error in get_admin_stats: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
     with app.app_context():
