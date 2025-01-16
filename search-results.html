@@ -235,6 +235,148 @@
         color: #FF8C00;
       }
       
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+      
+      .modal-content {
+        background-color: white;
+        border-radius: 20px;
+        padding: 2rem;
+        width: 90%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+      
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+      }
+      
+      .close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: #666;
+        cursor: pointer;
+      }
+      
+      .close-btn:hover {
+        color: #FF8C00;
+      }
+      
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+      
+      .form-group label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+        color: #666;
+      }
+      
+      .form-group label i {
+        color: #FF8C00;
+      }
+      
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 0.8rem;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        font-size: 1rem;
+      }
+      
+      .form-group input:read-only {
+        background-color: #f8f9fa;
+      }
+      
+      .form-group.checkbox {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      
+      .form-group.checkbox input {
+        width: auto;
+      }
+      
+      .submit-btn {
+        width: 100%;
+        padding: 1rem;
+        background: linear-gradient(135deg, #FF8C00, #FFA500);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      
+      .submit-btn:hover {
+        background: linear-gradient(135deg, #FFA500, #FF8C00);
+      }
+      
+      .success-message {
+        background: white;
+        border-radius: 20px;
+        padding: 3rem 2rem;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+      }
+      
+      .success-message i {
+        font-size: 4rem;
+        color: #28a745;
+        margin-bottom: 1rem;
+      }
+      
+      .success-message h2 {
+        color: #28a745;
+        margin-bottom: 1rem;
+      }
+      
+      .success-message p {
+        color: #666;
+        margin-bottom: 2rem;
+      }
+      
+      .error-message {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+      }
+      
+      .error-message i {
+        font-size: 3rem;
+        color: #dc3545;
+        margin-bottom: 1rem;
+      }
+      
+      .error-message p {
+        color: #666;
+      }
+      
       @media (max-width: 768px) {
         .ride-header {
           flex-direction: column;
@@ -271,166 +413,394 @@
         عودة إلى البحث
       </a>
 
-      <div class="search-summary">
-        <h2>نتائج البحث</h2>
-        <div class="summary-details">
-          <div class="summary-item">
-            <i class="fas fa-map-marker-alt"></i>
-            <span id="fromText">...</span>
-          </div>
-          <div class="summary-item">
-            <i class="fas fa-map-marker"></i>
-            <span id="toText">...</span>
-          </div>
-          <div class="summary-item">
-            <i class="fas fa-calendar"></i>
-            <span id="dateText">...</span>
-          </div>
-          <div class="summary-item">
-            <i class="fas fa-users"></i>
-            <span id="seatsText">...</span>
-          </div>
-        </div>
-      </div>
-
       <div id="searchResults">
         <!-- Results will be dynamically added here -->
       </div>
     </main>
 
     <script>
-      // Get search parameters from URL
-      const params = new URLSearchParams(window.location.search);
-      const from = params.get('from');
-      const to = params.get('to');
-      const date = params.get('date');
-      const seats = params.get('seats');
+      function loadSearchResults() {
+        const params = new URLSearchParams(window.location.search);
+        const from = params.get('from');
+        const to = params.get('to');
+        const date = params.get('date');
+        const seats = params.get('seats') || 1;
 
-      // Update search summary
-      document.getElementById('fromText').textContent = from || 'غير محدد';
-      document.getElementById('toText').textContent = to || 'غير محدد';
-      document.getElementById('dateText').textContent = formatDate(date) || 'غير محدد';
-      document.getElementById('seatsText').textContent = seats ? seats + ' مقاعد' : 'غير محدد';
+        if (!from || !to || !date) {
+          showError('معلومات البحث غير مكتملة');
+          return;
+        }
 
-      // Search for matching rides
-      const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-      const matchingRides = rides.filter(ride => {
-        const rideDate = new Date(ride.date);
-        const searchDate = new Date(date);
-        rideDate.setHours(0, 0, 0, 0);
-        searchDate.setHours(0, 0, 0, 0);
-        
-        return (
-          ride.from.toLowerCase().includes(from.toLowerCase()) &&
-          ride.to.toLowerCase().includes(to.toLowerCase()) &&
-          rideDate.getTime() === searchDate.getTime() &&
-          parseInt(ride.seats) >= parseInt(seats)
-        );
-      });
+        // Fetch rides from backend API
+        fetch('/api/rides/search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            departure_city: from,
+            destination_city: to,
+            date: date,
+            seats_needed: parseInt(seats)
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          const resultsContainer = document.getElementById('searchResults');
+          
+          if (!data.rides || data.rides.length === 0) {
+            resultsContainer.innerHTML = `
+              <div class="no-results">
+                <h2>لم يتم العثور على رحلات</h2>
+                <p>لا توجد رحلات متوفرة من ${from} إلى ${to} في ${formatDate(date)}</p>
+                <div class="actions">
+                  <button onclick="requestRide()" class="request-btn">
+                    <i class="fas fa-bell"></i>
+                    طلب رحلة
+                  </button>
+                  <a href="index.html" class="back-btn">
+                    <i class="fas fa-search"></i>
+                    بحث جديد
+                  </a>
+                </div>
+              </div>
+            `;
+            return;
+          }
 
-      // Display results
-      const resultsContainer = document.getElementById('searchResults');
-      
-      if (matchingRides.length === 0) {
+          resultsContainer.innerHTML = `
+            <div class="search-summary">
+              <h2>نتائج البحث</h2>
+              <div class="summary-details">
+                <div class="summary-item">
+                  <i class="fas fa-map-marker-alt"></i>
+                  <span>من: ${from}</span>
+                </div>
+                <div class="summary-item">
+                  <i class="fas fa-map-marker"></i>
+                  <span>إلى: ${to}</span>
+                </div>
+                <div class="summary-item">
+                  <i class="fas fa-calendar"></i>
+                  <span>التاريخ: ${formatDate(date)}</span>
+                </div>
+                <div class="summary-item">
+                  <i class="fas fa-users"></i>
+                  <span>عدد المقاعد: ${seats}</span>
+                </div>
+              </div>
+            </div>
+            <div class="rides-list">
+              ${data.rides.map(ride => `
+                <div class="ride-card">
+                  <div class="ride-header">
+                    <div class="route-info">
+                      <span>${ride.departure_city}</span>
+                      <i class="fas fa-arrow-left"></i>
+                      <span>${ride.destination_city}</span>
+                    </div>
+                    <div class="price">
+                      ${ride.price_per_seat} د.ع
+                    </div>
+                  </div>
+
+                  <div class="ride-details">
+                    <div class="detail-item">
+                      <i class="fas fa-calendar"></i>
+                      <span>${formatDate(ride.departure_time)}</span>
+                    </div>
+                    <div class="detail-item">
+                      <i class="fas fa-car"></i>
+                      <span>${ride.car_type}</span>
+                    </div>
+                    <div class="detail-item">
+                      <i class="fas fa-chair"></i>
+                      <span>${ride.available_seats} مقاعد متوفرة</span>
+                    </div>
+                  </div>
+
+                  <div class="ride-actions">
+                    <button onclick="contactDriver('${ride.driver_phone}', '${from}', '${to}', '${date}')" class="contact-btn">
+                      <i class="fas fa-phone"></i>
+                      اتصل بالسائق
+                    </button>
+                    <button onclick="requestRide(${ride.id})" class="book-btn">
+                      <i class="fas fa-check"></i>
+                      احجز مقعد
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        })
+        .catch(error => {
+          showError('حدث خطأ في جلب الرحلات');
+          console.error('Error:', error);
+        });
+      }
+
+      function showError(message) {
+        const resultsContainer = document.getElementById('searchResults');
         resultsContainer.innerHTML = `
-          <div class="no-results">
-            <i class="fas fa-search"></i>
-            <h3>لا توجد رحلات متاحة</h3>
-            <p>لم نجد رحلات متاحة في هذا المسار والتاريخ. يمكنك نشر طلب رحلة وسيتواصل معك السائقون المتجهون لنفس الوجهة.</p>
-            <button onclick="suggestRide()" class="suggest-btn">
-              <i class="fas fa-plus"></i>
-              نشر طلب رحلة
-            </button>
+          <div class="error-message">
+            <i class="fas fa-exclamation-circle"></i>
+            <p>${message}</p>
           </div>
         `;
-      } else {
-        resultsContainer.innerHTML = matchingRides.map(ride => `
-          <div class="ride-card">
-            <div class="ride-header">
-              <div class="route-info">
-                <span>${ride.from}</span>
-                <i class="fas fa-arrow-left"></i>
-                <span>${ride.to}</span>
-              </div>
-              <div class="price">
-                ${parseInt(ride.price).toLocaleString('ar-IQ')} د.ع
-              </div>
-            </div>
+      }
 
-            <div class="ride-details">
-              <div class="detail-item">
-                <i class="fas fa-calendar"></i>
-                <span>${formatDate(ride.date)}</span>
-              </div>
-              <div class="detail-item">
-                <i class="fas fa-clock"></i>
-                <span>${ride.time}</span>
-              </div>
-              <div class="detail-item">
-                <i class="fas fa-car"></i>
-                <span>${ride.carType === 'suv' ? 'دفع رباعي' : 'صالون'}</span>
-              </div>
-              <div class="detail-item">
-                <i class="fas fa-users"></i>
-                <span>${ride.seats} مقاعد</span>
-              </div>
-            </div>
+      function requestRide() {
+        const params = new URLSearchParams(window.location.search);
+        const from = params.get('from');
+        const to = params.get('to');
+        const date = params.get('date');
+        const seats = params.get('seats') || 1;
 
-            <button onclick="contactDriver('${ride.phone}', '${ride.from}', '${ride.to}', '${ride.date}', ${seats})" class="contact-btn">
-              <i class="fab fa-whatsapp"></i>
-              تواصل مع السائق
-            </button>
+        // Show request form modal
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2>طلب رحلة جديدة</h2>
+              <button onclick="closeModal()" class="close-btn">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="modal-body">
+              <form id="requestForm" onsubmit="submitRequest(event)">
+                <div class="form-group">
+                  <label>
+                    <i class="fas fa-map-marker-alt"></i>
+                    من
+                  </label>
+                  <input type="text" value="${from}" readonly>
+                </div>
+                <div class="form-group">
+                  <label>
+                    <i class="fas fa-map-marker"></i>
+                    إلى
+                  </label>
+                  <input type="text" value="${to}" readonly>
+                </div>
+                <div class="form-group">
+                  <label>
+                    <i class="fas fa-calendar"></i>
+                    التاريخ
+                  </label>
+                  <input type="date" value="${date}" readonly>
+                </div>
+                <div class="form-group">
+                  <label>
+                    <i class="fas fa-users"></i>
+                    عدد المقاعد
+                  </label>
+                  <input type="number" value="${seats}" min="1" max="7" required>
+                </div>
+                <div class="form-group">
+                  <label>
+                    <i class="fas fa-car"></i>
+                    نوع السيارة المفضل
+                  </label>
+                  <select name="carType">
+                    <option value="">أي نوع</option>
+                    <option value="suv">دفع رباعي</option>
+                    <option value="sedan">صالون</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>
+                    <i class="fas fa-phone"></i>
+                    رقم الهاتف
+                  </label>
+                  <input type="tel" name="phone" pattern="[0-9]{11}" placeholder="07XXXXXXXXX" required>
+                </div>
+                <div class="form-group checkbox">
+                  <input type="checkbox" id="fullBooking" name="fullBooking">
+                  <label for="fullBooking">
+                    <i class="fas fa-car-side"></i>
+                    حجز السيارة كاملة
+                  </label>
+                </div>
+                <button type="submit" class="submit-btn">
+                  <i class="fas fa-paper-plane"></i>
+                  إرسال الطلب
+                </button>
+              </form>
+            </div>
           </div>
-        `).join('');
+        `;
+        document.body.appendChild(modal);
+      }
+
+      function submitRequest(event) {
+        event.preventDefault();
+        const form = event.target;
+        const params = new URLSearchParams(window.location.search);
+        
+        const requestData = {
+          departure_city: params.get('from'),
+          destination_city: params.get('to'),
+          desired_date: params.get('date'),
+          seats_needed: parseInt(form.querySelector('input[type="number"]').value),
+          preferred_car_type: form.querySelector('select[name="carType"]').value || null,
+          full_car_booking: form.querySelector('input[name="fullBooking"]').checked,
+          rider_phone: form.querySelector('input[name="phone"]').value
+        };
+
+        // Send request to backend
+        fetch('/api/riders/requests', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+          closeModal();
+          showSuccessMessage('تم إرسال طلبك بنجاح! سيتم إشعارك عند توفر رحلة مناسبة.');
+        })
+        .catch(error => {
+          showError('حدث خطأ في إرسال الطلب');
+          console.error('Error:', error);
+        });
+      }
+
+      function showSuccessMessage(message) {
+        const resultsContainer = document.getElementById('searchResults');
+        resultsContainer.innerHTML = `
+          <div class="success-message">
+            <i class="fas fa-check-circle"></i>
+            <h2>تم إرسال الطلب</h2>
+            <p>${message}</p>
+            <a href="index.html" class="back-btn">
+              <i class="fas fa-search"></i>
+              بحث جديد
+            </a>
+          </div>
+        `;
+      }
+
+      function closeModal() {
+        const modal = document.querySelector('.modal');
+        if (modal) {
+          modal.remove();
+        }
+      }
+
+      function requestRide(rideId) {
+        // Show booking form modal
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+          <div class="modal-content">
+            <h2>حجز مقعد</h2>
+            <form id="bookingForm" onsubmit="submitBooking('${rideId}', event)">
+              <div class="form-group">
+                <label for="passengerName">الاسم</label>
+                <input type="text" id="passengerName" required>
+              </div>
+              <div class="form-group">
+                <label for="passengerPhone">رقم الهاتف</label>
+                <input type="tel" id="passengerPhone" pattern="^07[3-9]\\d{8}$" placeholder="مثال: 07801234567" required>
+              </div>
+              <div class="form-group">
+                <label for="seatsCount">عدد المقاعد</label>
+                <input type="number" id="seatsCount" min="1" max="4" value="1" required>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="submit-btn">تأكيد الحجز</button>
+                <button type="button" onclick="closeModal()" class="cancel-btn">إلغاء</button>
+              </div>
+            </form>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
+
+      function submitBooking(rideId, event) {
+        event.preventDefault();
+        
+        const name = document.getElementById('passengerName').value;
+        const phone = document.getElementById('passengerPhone').value;
+        const seats = parseInt(document.getElementById('seatsCount').value);
+
+        // Validate phone number
+        if (!phone.match(/^07[3-9]\d{8}$/)) {
+          alert('رقم الهاتف غير صحيح. يجب أن يبدأ بـ 07 ويتكون من 11 رقم');
+          return;
+        }
+
+        // Get ride details
+        const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+        const ride = rides.find(r => r.id === rideId);
+        
+        if (!ride) {
+          alert('عذراً، لم يتم العثور على الرحلة');
+          return;
+        }
+
+        if (ride.available_seats < seats) {
+          alert('عذراً، عدد المقاعد المطلوبة غير متوفر');
+          return;
+        }
+
+        // Create booking request
+        const request = {
+          id: Date.now(),
+          ride_id: rideId,
+          from: ride.from,
+          to: ride.to,
+          date: ride.date,
+          passenger_name: name,
+          passenger_phone: phone,
+          seats: seats,
+          status: 'pending'
+        };
+
+        // Save request
+        const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
+        requests.push(request);
+        localStorage.setItem('rideRequests', JSON.stringify(requests));
+
+        // Update available seats
+        ride.available_seats -= seats;
+        localStorage.setItem('publishedRides', JSON.stringify(rides));
+
+        // Close modal and show success message
+        closeModal();
+        alert('تم إرسال طلب الحجز بنجاح! سيتواصل معك السائق قريباً.');
+        
+        // Reload results
+        loadSearchResults();
+      }
+
+      function contactDriver(phone, from, to, date) {
+        const message = encodeURIComponent(`السلام عليكم، أود الاستفسار عن رحلة ${from} إلى ${to} بتاريخ ${formatDate(date)}`);
+        const formattedPhone = formatPhone(phone);
+        window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
+      }
+
+      function formatPhone(phone) {
+        let digits = phone.replace(/\D/g, '');
+        if (digits.startsWith('0')) {
+          digits = '964' + digits.slice(1);
+        }
+        if (!digits.startsWith('964')) {
+          digits = '964' + digits;
+        }
+        return digits;
       }
 
       function formatDate(dateStr) {
-        if (!dateStr) return '';
         const options = { year: 'numeric', month: 'long', day: 'numeric' };
         return new Date(dateStr).toLocaleDateString('ar-IQ', options);
       }
 
-      function formatPhone(phone) {
-        // Remove any non-digit characters
-        let digits = phone.replace(/\D/g, '');
-        
-        // If the number starts with 0, replace it with 964
-        if (digits.startsWith('0')) {
-          digits = '964' + digits.slice(1);
-        }
-        
-        // If the number doesn't start with 964, add it
-        if (!digits.startsWith('964')) {
-          digits = '964' + digits;
-        }
-        
-        return digits;
-      }
-
-      function contactDriver(phone, from, to, date, seats) {
-        // Format message
-        const message = encodeURIComponent(`السلام عليكم، أود حجز ${seats} مقعد لرحلة ${from} إلى ${to} بتاريخ ${formatDate(date)}`);
-        
-        // Format phone number for WhatsApp
-        const formattedPhone = formatPhone(phone);
-        
-        // Open WhatsApp
-        window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
-      }
-
-      function suggestRide() {
-        // Store search criteria in localStorage
-        const searchCriteria = {
-          from: from,
-          to: to,
-          date: date,
-          seats: seats
-        };
-        localStorage.setItem('lastSearchCriteria', JSON.stringify(searchCriteria));
-        
-        // Redirect to publish ride page
-        window.location.href = 'publish-ride.html?type=request';
-      }
+      // Load results when page loads
+      document.addEventListener('DOMContentLoaded', loadSearchResults);
     </script>
   </body>
 </html>

@@ -259,6 +259,45 @@ def rides():
             print('Error publishing ride:', str(e))
             return jsonify({'error': 'حدث خطأ في نشر الرحلة'}), 500
 
+@app.route('/api/drivers/matching-requests', methods=['POST'])
+def get_matching_requests():
+    data = request.json
+    try:
+        # Convert date string to datetime
+        ride_date = datetime.fromisoformat(data['departure_time'])
+        
+        # Find matching requests based on route and date
+        matching_requests = RideRequest.query.filter_by(
+            departure_city=data['departure_city'],
+            destination_city=data['destination_city'],
+            status='pending'
+        ).filter(
+            RideRequest.desired_date >= ride_date,
+            RideRequest.desired_date <= ride_date.replace(hour=23, minute=59, second=59)
+        ).all()
+        
+        requests_data = []
+        for req in matching_requests:
+            rider = User.query.get(req.rider_id)
+            requests_data.append({
+                'id': req.id,
+                'departure_city': req.departure_city,
+                'destination_city': req.destination_city,
+                'desired_date': req.desired_date.isoformat(),
+                'seats_needed': req.seats_needed,
+                'preferred_car_type': req.preferred_car_type,
+                'full_car_booking': req.full_car_booking,
+                'rider_phone': rider.phone,
+                'created_at': req.created_at.isoformat()
+            })
+            
+        return jsonify({
+            'matching_requests': requests_data,
+            'count': len(requests_data)
+        }), 200
+    except Exception as e:
+        return jsonify({'error': 'حدث خطأ في البحث عن الطلبات المطابقة'}), 400
+
 # Admin routes
 @app.route('/api/admin/rides', methods=['GET'])
 def get_all_rides():

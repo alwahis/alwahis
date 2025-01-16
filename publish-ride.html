@@ -584,6 +584,182 @@
         margin-bottom: 0.5rem;
         color: #2d3436;
       }
+
+      .matching-requests {
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid #eee;
+      }
+
+      .matching-requests h3 {
+        color: #2d3436;
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+      }
+
+      .loading i {
+        font-size: 2rem;
+        color: #FF8C00;
+        margin-bottom: 1rem;
+      }
+
+      .no-requests {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+      }
+
+      .no-requests i {
+        font-size: 3rem;
+        color: #ddd;
+        margin-bottom: 1rem;
+      }
+
+      .requests-list {
+        display: grid;
+        gap: 1rem;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      .request-card {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 1.5rem;
+      }
+
+      .request-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+
+      .route-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #2d3436;
+        font-weight: 500;
+      }
+
+      .route-info i {
+        color: #FF8C00;
+      }
+
+      .seats-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #FF8C00;
+        font-weight: 500;
+      }
+
+      .request-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #666;
+      }
+
+      .detail-item i {
+        color: #FF8C00;
+      }
+
+      .detail-item.full-booking {
+        color: #FF8C00;
+        font-weight: 500;
+      }
+
+      .request-actions {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .contact-btn {
+        background: #FF8C00;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .contact-btn:hover {
+        background: #ff9f1a;
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+      }
+
+      .primary-btn,
+      .secondary-btn {
+        flex: 1;
+        padding: 0.8rem;
+        border-radius: 8px;
+        text-align: center;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+      }
+
+      .primary-btn {
+        background: #FF8C00;
+        color: white;
+      }
+
+      .primary-btn:hover {
+        background: #ff9f1a;
+      }
+
+      .secondary-btn {
+        background: #f8f9fa;
+        color: #666;
+      }
+
+      .secondary-btn:hover {
+        background: #e9ecef;
+      }
+
+      @media (max-width: 768px) {
+        .modal-actions {
+          flex-direction: column;
+        }
+        
+        .request-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
+        }
+        
+        .request-details {
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+      }
     </style>
   </head>
   <body>
@@ -679,15 +855,31 @@
     <!-- Success Modal -->
     <div id="successModal" class="modal">
       <div class="modal-content">
-        <h2>تم نشر رحلتك بنجاح!</h2>
-        
-        <div id="matchingRequests" class="matching-requests">
-          <!-- Matching requests will be loaded here -->
+        <div class="modal-header">
+          <h2>تم نشر الرحلة بنجاح</h2>
+          <button onclick="closeSuccessModal()" class="close-btn">×</button>
         </div>
-
-        <div class="modal-actions">
-          <a href="my-rides.html" class="view-rides-btn">عرض رحلاتي</a>
-          <button class="close-modal-btn" onclick="closeSuccessModal()">إغلاق</button>
+        <div class="modal-body">
+          <div class="success-message">
+            <i class="fas fa-check-circle"></i>
+            <p id="successMessage"></p>
+          </div>
+          <div id="matchingRequests" class="matching-requests">
+            <div class="loading">
+              <i class="fas fa-spinner fa-spin"></i>
+              <p>جاري البحث عن طلبات مطابقة...</p>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <a href="my-rides.html" class="primary-btn">
+              <i class="fas fa-list"></i>
+              عرض رحلاتي
+            </a>
+            <a href="index.html" class="secondary-btn">
+              <i class="fas fa-home"></i>
+              الصفحة الرئيسية
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -785,51 +977,116 @@
       }
 
       async function showSuccessModal(from, to, date) {
+        const modal = document.getElementById('successModal');
+        const successMessage = document.getElementById('successMessage');
         const matchingRequests = document.getElementById('matchingRequests');
         
-        try {
-          // Get existing rides from localStorage
-          const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-          
-          // Filter matching requests
-          const requests = rides.filter(ride => ride.from === from && ride.to === to && ride.date === date);
-          
-          if (requests.length === 0) {
+        successMessage.textContent = `تم نشر رحلتك من ${from} إلى ${to} بتاريخ ${date} بنجاح`;
+        
+        modal.style.display = 'flex';
+        
+        // Fetch matching requests
+        fetch('/api/drivers/matching-requests', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            departure_city: from,
+            destination_city: to,
+            departure_time: date
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (!data.matching_requests || data.matching_requests.length === 0) {
             matchingRequests.innerHTML = `
               <div class="no-requests">
                 <i class="fas fa-search"></i>
-                <h3>لا توجد طلبات مطابقة حالياً</h3>
-                <p>سيتم إخطارك عند وجود طلبات جديدة لنفس المسار</p>
+                <p>لا توجد طلبات مطابقة حالياً</p>
               </div>
             `;
-          } else {
-            matchingRequests.innerHTML = `
-              <h3>طلبات مطابقة لرحلتك:</h3>
-              <div class="requests-list">
-                ${requests.map(request => `
-                  <div class="request-item">
-                    <div class="request-info">
-                      <p><strong>الاسم:</strong> ${request.driver_name}</p>
-                      <p><strong>الهاتف:</strong> ${request.driver_phone}</p>
-                      <p><strong>التاريخ:</strong> ${request.date}</p>
-                      <p><strong>عدد المقاعد:</strong> ${request.available_seats}</p>
+            return;
+          }
+          
+          matchingRequests.innerHTML = `
+            <h3>طلبات الركاب المطابقة (${data.count})</h3>
+            <div class="requests-list">
+              ${data.matching_requests.map(request => `
+                <div class="request-card">
+                  <div class="request-header">
+                    <div class="route-info">
+                      <span>${request.departure_city}</span>
+                      <i class="fas fa-arrow-left"></i>
+                      <span>${request.destination_city}</span>
+                    </div>
+                    <div class="seats-info">
+                      <i class="fas fa-users"></i>
+                      <span>${request.seats_needed} مقاعد</span>
                     </div>
                   </div>
-                `).join('')}
-              </div>
-            `;
-          }
-        } catch (error) {
-          console.error('Error fetching matching requests:', error);
+                  
+                  <div class="request-details">
+                    <div class="detail-item">
+                      <i class="fas fa-calendar"></i>
+                      <span>${formatDate(request.desired_date)}</span>
+                    </div>
+                    ${request.preferred_car_type ? `
+                      <div class="detail-item">
+                        <i class="fas fa-car"></i>
+                        <span>${request.preferred_car_type === 'suv' ? 'دفع رباعي' : 'صالون'}</span>
+                      </div>
+                    ` : ''}
+                    ${request.full_car_booking ? `
+                      <div class="detail-item full-booking">
+                        <i class="fas fa-car-side"></i>
+                        <span>حجز السيارة كاملة</span>
+                      </div>
+                    ` : ''}
+                  </div>
+                  
+                  <div class="request-actions">
+                    <button onclick="contactRider('${request.rider_phone}', '${from}', '${to}', '${date}')" class="contact-btn">
+                      <i class="fas fa-phone"></i>
+                      اتصل بالراكب
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        })
+        .catch(error => {
           matchingRequests.innerHTML = `
             <div class="error-message">
               <i class="fas fa-exclamation-circle"></i>
-              <p>حدث خطأ أثناء تحميل الطلبات المطابقة</p>
+              <p>حدث خطأ في جلب الطلبات المطابقة</p>
             </div>
           `;
-        }
+          console.error('Error:', error);
+        });
+      }
 
-        document.getElementById('successModal').style.display = 'flex';
+      function contactRider(phone, from, to, date) {
+        const message = encodeURIComponent(`السلام عليكم، لدي رحلة من ${from} إلى ${to} بتاريخ ${formatDate(date)}`);
+        const formattedPhone = formatPhone(phone);
+        window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
+      }
+
+      function formatDate(dateStr) {
+        const date = new Date(dateStr);
+        return new Intl.DateTimeFormat('ar-IQ', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }).format(date);
+      }
+
+      function formatPhone(phone) {
+        if (phone.startsWith('07')) {
+          return '964' + phone.substring(1);
+        }
+        return phone;
       }
 
       function closeSuccessModal() {
