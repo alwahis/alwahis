@@ -113,8 +113,8 @@ def search_rides():
         except ValueError:
             return jsonify({'error': 'Invalid date format'}), 400
 
-        # Query rides
-        rides = Ride.query.filter(
+        # Query rides with their related car and driver information
+        rides = db.session.query(Ride, Car, User).join(Car, Ride.car_id == Car.id).join(User, Ride.driver_id == User.id).filter(
             Ride.departure_city == departure_city,
             Ride.destination_city == destination_city,
             Ride.departure_time >= search_date,
@@ -131,9 +131,9 @@ def search_rides():
                 'departure_time': ride.departure_time.isoformat(),
                 'available_seats': ride.available_seats,
                 'price_per_seat': ride.price_per_seat,
-                'car_type': ride.car_type,
-                'driver_phone': ride.driver_phone
-            } for ride in rides]
+                'car_type': car.car_type,
+                'driver_phone': driver.phone
+            } for ride, car, driver in rides]
         }), 200
 
     except Exception as e:
@@ -186,23 +186,21 @@ def get_ride_requests():
 def rides():
     if request.method == 'GET':
         try:
-            rides = Ride.query.all()
+            rides = db.session.query(Ride, Car, User).join(Car, Ride.car_id == Car.id).join(User, Ride.driver_id == User.id).filter(
+                Ride.status == 'active'
+            ).all()
+
             return jsonify({
-                'message': 'تم جلب الرحلات بنجاح',
                 'rides': [{
                     'id': ride.id,
-                    'from': ride.departure_city,
-                    'to': ride.destination_city,
+                    'departure_city': ride.departure_city,
+                    'destination_city': ride.destination_city,
                     'departure_time': ride.departure_time.isoformat(),
-                    'total_seats': ride.total_seats,
                     'available_seats': ride.available_seats,
                     'price_per_seat': ride.price_per_seat,
-                    'status': ride.status,
-                    'driver': {
-                        'name': ride.driver.name,
-                        'phone': ride.driver.phone
-                    } if ride.driver else None
-                } for ride in rides]
+                    'car_type': car.car_type,
+                    'driver_phone': driver.phone
+                } for ride, car, driver in rides]
             }), 200
         except Exception as e:
             print(f"Error in rides: {str(e)}")
@@ -210,66 +208,72 @@ def rides():
     else:  # POST
         try:
             data = request.json
-            print('Received ride data:', data)
-
-            # Create or get driver
-            driver = User.query.filter_by(phone=data['driver_phone']).first()
-            if not driver:
-                driver = User(
+            
+            # First, create or get the user
+            user = User.query.filter_by(phone=data['driver_phone']).first()
+            if not user:
+                user = User(
                     name=data['driver_name'],
                     phone=data['driver_phone'],
                     user_type='driver'
                 )
-                db.session.add(driver)
-                db.session.commit()
+                db.session.add(user)
+                db.session.flush()  # This will assign an ID to the user
 
-            # Create or get car
-            car = Car.query.filter_by(driver_id=driver.id).first()
+            # Then, create or get the car
+            car = Car.query.filter_by(driver_id=user.id).first()
             if not car:
                 car = Car(
-                    driver_id=driver.id,
+                    driver_id=user.id,
                     car_type=data['car_type'],
                     car_details=data.get('car_details', ''),
-                    photo_url='default.jpg'
+                    photo_url='default_car.jpg'  # You can update this later
                 )
                 db.session.add(car)
-                db.session.commit()
+                db.session.flush()  # This will assign an ID to the car
 
-            # Parse date and time
-            departure_time = datetime.strptime(f"{data['date']} {data['time']}", "%Y-%m-%d %H:%M")
-
-            # Create ride
-            ride = Ride(
-                driver_id=driver.id,
-                departure_city=data['from'],
-                destination_city=data['to'],
-                departure_time=departure_time,
-                total_seats=int(data['total_seats']),
-                available_seats=int(data['total_seats']),
-                price_per_seat=int(data['price_per_seat']),
+            # Create the ride
+            departure_time = datetime.strptime(data['departure_time'], '%Y-%m-%d')
+            new_ride = Ride(
+                driver_id=user.id,
                 car_id=car.id,
+                departure_city=data['departure_city'],
+                destination_city=data['destination_city'],
+                departure_time=departure_time,
+                total_seats=data['total_seats'],
+                available_seats=data['available_seats'],
+                price_per_seat=data['price_per_seat'],
                 status='active'
             )
-            db.session.add(ride)
+            
+            db.session.add(new_ride)
             db.session.commit()
+
+            # Get matching requests
+            matching_requests = db.session.query(RideRequest).filter(
+                RideRequest.departure_city == new_ride.departure_city,
+                RideRequest.destination_city == new_ride.destination_city,
+                RideRequest.desired_date >= departure_time,
+                RideRequest.desired_date < departure_time + timedelta(days=1),
+                RideRequest.seats_needed <= new_ride.available_seats,
+                RideRequest.status == 'pending'
+            ).all()
 
             return jsonify({
                 'message': 'تم نشر الرحلة بنجاح',
-                'ride': {
-                    'id': ride.id,
-                    'from': ride.departure_city,
-                    'to': ride.destination_city,
-                    'date': ride.departure_time.strftime('%Y-%m-%d'),
-                    'time': ride.departure_time.strftime('%H:%M'),
-                    'driver': {
-                        'name': driver.name,
-                        'phone': driver.phone
-                    }
-                }
+                'ride_id': new_ride.id,
+                'matching_requests': [{
+                    'id': req.id,
+                    'departure_city': req.departure_city,
+                    'destination_city': req.destination_city,
+                    'desired_date': req.desired_date.isoformat(),
+                    'seats_needed': req.seats_needed
+                } for req in matching_requests]
             }), 201
 
         except Exception as e:
             print(f"Error in rides: {str(e)}")
+            db.session.rollback()
             return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/drivers/matching-requests', methods=['POST'])
