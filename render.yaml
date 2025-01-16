@@ -3,7 +3,7 @@ services:
     name: alwahis-backend
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --log-level debug
+    startCommand: gunicorn wsgi:app --log-level debug --workers=2 --threads=4 --timeout=60
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
@@ -13,5 +13,3 @@ services:
         generateValue: true
       - key: FLASK_ENV
         value: production
-      - key: GUNICORN_CMD_ARGS
-        value: "--workers=2 --threads=4 --timeout=60"
