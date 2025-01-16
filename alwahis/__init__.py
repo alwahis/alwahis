@@ -19,7 +19,7 @@ app = Flask(__name__)
 # Enable CORS for all routes with all origins
 CORS(app, resources={
     r"/*": {
-        "origins": ["https://alwahis.netlify.app", "http://localhost:5000", "http://localhost:5001", "http://localhost:5002", "http://localhost:5003"],
+        "origins": "*",
         "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
     }
