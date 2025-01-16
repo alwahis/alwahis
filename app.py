@@ -83,7 +83,7 @@ class RideRequest(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # Routes
-@app.route('/health', methods=['GET'])
+@app.route('/api/health', methods=['GET'])
 def health_check():
     try:
         # Test database connection
