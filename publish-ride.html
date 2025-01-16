@@ -534,9 +534,8 @@
 
       .request-details {
         display: flex;
-        gap: 1.5rem;
-        color: #636e72;
-        font-size: 0.9rem;
+        flex-wrap: wrap;
+        gap: 1rem;
         margin-bottom: 1rem;
       }
 
@@ -894,57 +893,66 @@
     </footer>
 
     <script>
-      // Set minimum date to today
-      document.addEventListener('DOMContentLoaded', function() {
-        const today = new Date();
-        const dd = String(today.getDate()).padStart(2, '0');
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const yyyy = today.getFullYear();
-        
-        const minDate = yyyy + '-' + mm + '-' + dd;
-        document.getElementById('departureDate').min = minDate;
-        
-        // Set default time to next hour
-        const nextHour = new Date(today.setHours(today.getHours() + 1, 0, 0));
-        const hours = String(nextHour.getHours()).padStart(2, '0');
-        const minutes = String(nextHour.getMinutes()).padStart(2, '0');
-        document.getElementById('departureTime').value = `${hours}:${minutes}`;
-      });
+      const API_BASE_URL = 'https://alwahis-backend.onrender.com';
 
-      function publishRide(event) {
+      async function publishRide(event) {
         event.preventDefault();
         const form = event.target;
         
         const rideData = {
-          id: Date.now().toString(),
-          from: form.querySelector('#fromLocation').value,
-          to: form.querySelector('#toLocation').value,
-          date: form.querySelector('#departureDate').value,
-          price_per_seat: parseInt(form.querySelector('#pricePerSeat').value),
+          departure_city: form.querySelector('#fromLocation').value,
+          destination_city: form.querySelector('#toLocation').value,
+          departure_time: form.querySelector('#departureDate').value,
+          total_seats: parseInt(form.querySelector('#availableSeats').value),
           available_seats: parseInt(form.querySelector('#availableSeats').value),
+          price_per_seat: parseInt(form.querySelector('#pricePerSeat').value),
           car_type: form.querySelector('#carType').value,
           driver_phone: form.querySelector('#phoneNumber').value,
-          status: 'active',
-          created_at: new Date().toISOString()
+          driver_name: form.querySelector('#driverName').value,
+          car_details: form.querySelector('#carDetails').value || ''
         };
 
-        // Save to localStorage
-        const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-        rides.push(rideData);
-        localStorage.setItem('publishedRides', JSON.stringify(rides));
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/rides`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(rideData)
+          });
 
-        // Find matching requests
-        const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
-        const matchingRequests = requests.filter(request => 
-          request.departure_city === rideData.from &&
-          request.destination_city === rideData.to &&
-          request.desired_date === rideData.date &&
-          request.seats_needed <= rideData.available_seats &&
-          request.status === 'pending' &&
-          (!request.preferred_car_type || request.preferred_car_type === rideData.car_type)
-        );
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
 
-        showSuccessModal(matchingRequests);
+          const data = await response.json();
+          
+          // Get matching requests
+          const matchingResponse = await fetch(`${API_BASE_URL}/api/drivers/matching-requests`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              departure_city: rideData.departure_city,
+              destination_city: rideData.destination_city,
+              departure_time: rideData.departure_time
+            })
+          });
+
+          if (!matchingResponse.ok) {
+            throw new Error('Network response was not ok');
+          }
+
+          const matchingData = await matchingResponse.json();
+          showSuccessModal(matchingData.matching_requests || []);
+          
+          // Reset form
+          form.reset();
+        } catch (error) {
+          showError('حدث خطأ في نشر الرحلة');
+          console.error('Error:', error);
+        }
       }
 
       function showSuccessModal(matchingRequests) {
@@ -999,6 +1007,27 @@
         
         modal.style.display = 'flex';
       }
+
+      function showError(message) {
+        alert(message);
+      }
+
+      // Set minimum date to today
+      document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const yyyy = today.getFullYear();
+        
+        const minDate = yyyy + '-' + mm + '-' + dd;
+        document.getElementById('departureDate').min = minDate;
+        
+        // Set default time to next hour
+        const nextHour = new Date(today.setHours(today.getHours() + 1, 0, 0));
+        const hours = String(nextHour.getHours()).padStart(2, '0');
+        const minutes = String(nextHour.getMinutes()).padStart(2, '0');
+        document.getElementById('departureTime').value = `${hours}:${minutes}`;
+      });
 
       function contactRider(phone, from, to, date) {
         const message = encodeURIComponent(`السلام عليكم، لدي رحلة من ${from} إلى ${to} بتاريخ ${date}`);

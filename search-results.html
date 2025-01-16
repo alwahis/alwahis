@@ -419,7 +419,9 @@
     </main>
 
     <script>
-      function loadSearchResults() {
+      const API_BASE_URL = 'https://alwahis-backend.onrender.com';
+
+      async function loadSearchResults() {
         const params = new URLSearchParams(window.location.search);
         const from = params.get('from');
         const to = params.get('to');
@@ -431,21 +433,68 @@
           return;
         }
 
-        // Get rides from localStorage
-        const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-        
-        // Filter rides based on search criteria
-        const matchingRides = rides.filter(ride => 
-          ride.from === from && 
-          ride.to === to && 
-          ride.date === date &&
-          ride.status === 'active' &&
-          ride.available_seats >= parseInt(seats)
-        );
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/rides/search`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              departure_city: from,
+              destination_city: to,
+              date: date,
+              seats_needed: parseInt(seats)
+            })
+          });
 
-        const resultsContainer = document.getElementById('searchResults');
-        
-        if (matchingRides.length === 0) {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+
+          const data = await response.json();
+          const resultsContainer = document.getElementById('searchResults');
+          
+          if (!data.rides || data.rides.length === 0) {
+            resultsContainer.innerHTML = `
+              <div class="search-summary">
+                <h2>نتائج البحث</h2>
+                <div class="summary-details">
+                  <div class="summary-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>من: ${from}</span>
+                  </div>
+                  <div class="summary-item">
+                    <i class="fas fa-map-marker"></i>
+                    <span>إلى: ${to}</span>
+                  </div>
+                  <div class="summary-item">
+                    <i class="fas fa-calendar"></i>
+                    <span>التاريخ: ${formatDate(date)}</span>
+                  </div>
+                  <div class="summary-item">
+                    <i class="fas fa-users"></i>
+                    <span>عدد المقاعد: ${seats}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="no-results">
+                <h2>لم يتم العثور على رحلات</h2>
+                <p>لا توجد رحلات متوفرة من ${from} إلى ${to} في ${formatDate(date)}</p>
+                <div class="actions">
+                  <button onclick="requestRide()" class="request-btn">
+                    <i class="fas fa-bell"></i>
+                    طلب رحلة
+                  </button>
+                  <a href="index.html" class="back-btn">
+                    <i class="fas fa-search"></i>
+                    بحث جديد
+                  </a>
+                </div>
+              </div>
+            `;
+            return;
+          }
+
           resultsContainer.innerHTML = `
             <div class="search-summary">
               <h2>نتائج البحث</h2>
@@ -468,89 +517,53 @@
                 </div>
               </div>
             </div>
-            <div class="no-results">
-              <h2>لم يتم العثور على رحلات</h2>
-              <p>لا توجد رحلات متوفرة من ${from} إلى ${to} في ${formatDate(date)}</p>
-              <div class="actions">
-                <button onclick="requestRide()" class="request-btn">
-                  <i class="fas fa-bell"></i>
-                  طلب رحلة
-                </button>
-                <a href="index.html" class="back-btn">
-                  <i class="fas fa-search"></i>
-                  بحث جديد
-                </a>
-              </div>
+            <div class="rides-list">
+              ${data.rides.map(ride => `
+                <div class="ride-card">
+                  <div class="ride-header">
+                    <div class="route-info">
+                      <span>${ride.departure_city}</span>
+                      <i class="fas fa-arrow-left"></i>
+                      <span>${ride.destination_city}</span>
+                    </div>
+                    <div class="price">
+                      ${ride.price_per_seat} د.ع
+                    </div>
+                  </div>
+
+                  <div class="ride-details">
+                    <div class="detail-item">
+                      <i class="fas fa-calendar"></i>
+                      <span>${formatDate(ride.departure_time)}</span>
+                    </div>
+                    <div class="detail-item">
+                      <i class="fas fa-car"></i>
+                      <span>${ride.car_type === 'suv' ? 'دفع رباعي' : 'صالون'}</span>
+                    </div>
+                    <div class="detail-item">
+                      <i class="fas fa-chair"></i>
+                      <span>${ride.available_seats} مقاعد متوفرة</span>
+                    </div>
+                  </div>
+
+                  <div class="ride-actions">
+                    <button onclick="contactDriver('${ride.driver_phone}', '${from}', '${to}', '${date}')" class="contact-btn">
+                      <i class="fas fa-phone"></i>
+                      اتصل بالسائق
+                    </button>
+                    <button onclick="requestRide('${ride.id}')" class="book-btn">
+                      <i class="fas fa-check"></i>
+                      احجز مقعد
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
             </div>
           `;
-          return;
+        } catch (error) {
+          showError('حدث خطأ في جلب الرحلات');
+          console.error('Error:', error);
         }
-
-        resultsContainer.innerHTML = `
-          <div class="search-summary">
-            <h2>نتائج البحث</h2>
-            <div class="summary-details">
-              <div class="summary-item">
-                <i class="fas fa-map-marker-alt"></i>
-                <span>من: ${from}</span>
-              </div>
-              <div class="summary-item">
-                <i class="fas fa-map-marker"></i>
-                <span>إلى: ${to}</span>
-              </div>
-              <div class="summary-item">
-                <i class="fas fa-calendar"></i>
-                <span>التاريخ: ${formatDate(date)}</span>
-              </div>
-              <div class="summary-item">
-                <i class="fas fa-users"></i>
-                <span>عدد المقاعد: ${seats}</span>
-              </div>
-            </div>
-          </div>
-          <div class="rides-list">
-            ${matchingRides.map(ride => `
-              <div class="ride-card">
-                <div class="ride-header">
-                  <div class="route-info">
-                    <span>${ride.from}</span>
-                    <i class="fas fa-arrow-left"></i>
-                    <span>${ride.to}</span>
-                  </div>
-                  <div class="price">
-                    ${ride.price_per_seat} د.ع
-                  </div>
-                </div>
-
-                <div class="ride-details">
-                  <div class="detail-item">
-                    <i class="fas fa-calendar"></i>
-                    <span>${formatDate(ride.date)}</span>
-                  </div>
-                  <div class="detail-item">
-                    <i class="fas fa-car"></i>
-                    <span>${ride.car_type === 'suv' ? 'دفع رباعي' : 'صالون'}</span>
-                  </div>
-                  <div class="detail-item">
-                    <i class="fas fa-chair"></i>
-                    <span>${ride.available_seats} مقاعد متوفرة</span>
-                  </div>
-                </div>
-
-                <div class="ride-actions">
-                  <button onclick="contactDriver('${ride.driver_phone}', '${from}', '${to}', '${date}')" class="contact-btn">
-                    <i class="fas fa-phone"></i>
-                    اتصل بالسائق
-                  </button>
-                  <button onclick="requestRide('${ride.id}')" class="book-btn">
-                    <i class="fas fa-check"></i>
-                    احجز مقعد
-                  </button>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        `;
       }
 
       function showError(message) {
@@ -647,31 +660,40 @@
         document.body.appendChild(modal);
       }
 
-      function submitRequest(event) {
+      async function submitRequest(event) {
         event.preventDefault();
         const form = event.target;
         const params = new URLSearchParams(window.location.search);
         
         const requestData = {
-          id: Date.now().toString(),
           departure_city: params.get('from'),
           destination_city: params.get('to'),
           desired_date: params.get('date'),
           seats_needed: parseInt(form.querySelector('input[type="number"]').value),
           preferred_car_type: form.querySelector('select[name="carType"]').value || null,
           full_car_booking: form.querySelector('input[name="fullBooking"]').checked,
-          rider_phone: form.querySelector('input[name="phone"]').value,
-          status: 'pending',
-          created_at: new Date().toISOString()
+          rider_phone: form.querySelector('input[name="phone"]').value
         };
 
-        // Save to localStorage
-        const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
-        requests.push(requestData);
-        localStorage.setItem('rideRequests', JSON.stringify(requests));
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/riders/requests`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+          });
 
-        closeModal();
-        showSuccessMessage('تم إرسال طلبك بنجاح! سيتم إشعارك عند توفر رحلة مناسبة.');
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+
+          closeModal();
+          showSuccessMessage('تم إرسال طلبك بنجاح! سيتم إشعارك عند توفر رحلة مناسبة.');
+        } catch (error) {
+          showError('حدث خطأ في إرسال الطلب');
+          console.error('Error:', error);
+        }
       }
 
       function showSuccessMessage(message) {
@@ -726,7 +748,7 @@
         document.body.appendChild(modal);
       }
 
-      function submitBooking(rideId, event) {
+      async function submitBooking(rideId, event) {
         event.preventDefault();
         
         const name = document.getElementById('passengerName').value;
@@ -740,8 +762,8 @@
         }
 
         // Get ride details
-        const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-        const ride = rides.find(r => r.id === rideId);
+        const response = await fetch(`${API_BASE_URL}/api/rides/${rideId}`);
+        const ride = await response.json();
         
         if (!ride) {
           alert('عذراً، لم يتم العثور على الرحلة');
@@ -757,9 +779,9 @@
         const request = {
           id: Date.now(),
           ride_id: rideId,
-          from: ride.from,
-          to: ride.to,
-          date: ride.date,
+          from: ride.departure_city,
+          to: ride.destination_city,
+          date: ride.departure_time,
           passenger_name: name,
           passenger_phone: phone,
           seats: seats,
@@ -767,20 +789,43 @@
         };
 
         // Save request
-        const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
-        requests.push(request);
-        localStorage.setItem('rideRequests', JSON.stringify(requests));
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/bookings`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(request)
+          });
 
-        // Update available seats
-        ride.available_seats -= seats;
-        localStorage.setItem('publishedRides', JSON.stringify(rides));
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
 
-        // Close modal and show success message
-        closeModal();
-        alert('تم إرسال طلب الحجز بنجاح! سيتواصل معك السائق قريباً.');
-        
-        // Reload results
-        loadSearchResults();
+          // Update available seats
+          ride.available_seats -= seats;
+          const response2 = await fetch(`${API_BASE_URL}/api/rides/${rideId}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ available_seats: ride.available_seats })
+          });
+
+          if (!response2.ok) {
+            throw new Error('Network response was not ok');
+          }
+
+          // Close modal and show success message
+          closeModal();
+          alert('تم إرسال طلب الحجز بنجاح! سيتواصل معك السائق قريباً.');
+          
+          // Reload results
+          loadSearchResults();
+        } catch (error) {
+          alert('حدث خطأ في إرسال طلب الحجز');
+          console.error('Error:', error);
+        }
       }
 
       function contactDriver(phone, from, to, date) {
