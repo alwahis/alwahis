@@ -6,8 +6,8 @@ services:
       pip install -r requirements.txt
       pip install -e .
     startCommand: |
-      cd /opt/render/project/src && python3 -c "from alwahis import app, db; app.app_context().push(); db.create_all()"
-      cd /opt/render/project/src && gunicorn 'alwahis:app' --log-level debug --workers=2 --threads=4 --timeout=60
+      cd /opt/render/project/src && python3 -c "from alwahis import db; from alwahis.models import *; db.create_all()"
+      cd /opt/render/project/src && gunicorn wsgi:app --log-level debug --workers=2 --threads=4 --timeout=60
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
