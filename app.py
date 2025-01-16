@@ -3,6 +3,16 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 import os
+import logging
+import sys
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -19,6 +29,8 @@ CORS(app, resources={
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+
+logger.info(f"Using database URL: {DATABASE_URL or 'sqlite:///alwahis.db'}")
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL or 'sqlite:///alwahis.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -70,9 +82,15 @@ class RideRequest(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # Routes
-@app.route('/health')
+@app.route('/health', methods=['GET'])
 def health_check():
-    return jsonify({'status': 'healthy', 'message': 'Server is running'}), 200
+    try:
+        # Test database connection
+        db.session.execute('SELECT 1')
+        return jsonify({'status': 'healthy', 'database': 'connected'}), 200
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return jsonify({'status': 'unhealthy', 'error': str(e)}), 500
 
 @app.route('/api/drivers/rides', methods=['POST'])
 def create_ride():
@@ -92,7 +110,7 @@ def create_ride():
         db.session.commit()
         return jsonify({'message': 'تم إنشاء الرحلة بنجاح', 'ride_id': new_ride.id}), 201
     except Exception as e:
-        print(f"Error in create_ride: {str(e)}")
+        logger.error(f"Error in create_ride: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/rides/search', methods=['POST'])
@@ -137,7 +155,7 @@ def search_rides():
         }), 200
 
     except Exception as e:
-        print(f"Error in search_rides: {str(e)}")
+        logger.error(f"Error in search_rides: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/riders/requests', methods=['POST'])
@@ -157,7 +175,7 @@ def create_ride_request():
         db.session.commit()
         return jsonify({'message': 'تم إنشاء الطلب بنجاح', 'request_id': new_request.id}), 201
     except Exception as e:
-        print(f"Error in create_ride_request: {str(e)}")
+        logger.error(f"Error in create_ride_request: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/drivers/requests', methods=['GET'])
@@ -179,7 +197,7 @@ def get_ride_requests():
             })
         return jsonify({'requests': requests_data}), 200
     except Exception as e:
-        print(f"Error in get_ride_requests: {str(e)}")
+        logger.error(f"Error in get_ride_requests: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/rides', methods=['GET', 'POST'])
@@ -203,7 +221,7 @@ def rides():
                 } for ride, car, driver in rides]
             }), 200
         except Exception as e:
-            print(f"Error in rides: {str(e)}")
+            logger.error(f"Error in rides: {str(e)}")
             return jsonify({'error': 'Internal server error'}), 500
     else:  # POST
         try:
@@ -272,7 +290,7 @@ def rides():
             }), 201
 
         except Exception as e:
-            print(f"Error in rides: {str(e)}")
+            logger.error(f"Error in rides: {str(e)}")
             db.session.rollback()
             return jsonify({'error': 'Internal server error'}), 500
 
@@ -313,7 +331,7 @@ def get_matching_requests():
             'count': len(requests_data)
         }), 200
     except Exception as e:
-        print(f"Error in get_matching_requests: {str(e)}")
+        logger.error(f"Error in get_matching_requests: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
 # Admin routes
@@ -347,7 +365,7 @@ def get_all_rides():
             })
         return jsonify({'rides': rides_data}), 200
     except Exception as e:
-        print(f"Error in get_all_rides: {str(e)}")
+        logger.error(f"Error in get_all_rides: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/admin/rides/<int:ride_id>', methods=['DELETE'])
@@ -358,7 +376,7 @@ def delete_ride(ride_id):
         db.session.commit()
         return jsonify({'message': 'تم حذف الرحلة بنجاح'}), 200
     except Exception as e:
-        print(f"Error in delete_ride: {str(e)}")
+        logger.error(f"Error in delete_ride: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/admin/stats', methods=['GET'])
@@ -376,11 +394,18 @@ def get_admin_stats():
             'total_drivers': total_drivers
         }), 200
     except Exception as e:
-        print(f"Error in get_admin_stats: {str(e)}")
+        logger.error(f"Error in get_admin_stats: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
+        try:
+            db.create_all()
+            logger.info("Database tables created successfully")
+        except Exception as e:
+            logger.error(f"Error creating database tables: {str(e)}")
+            sys.exit(1)
+    
     port = int(os.environ.get('PORT', 5000))
+    logger.info(f"Starting server on port {port}")
     app.run(host='0.0.0.0', port=port)
