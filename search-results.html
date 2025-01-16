@@ -428,30 +428,45 @@
         const date = params.get('date');
         const seats = params.get('seats') || 1;
 
+        console.log('Search params:', { from, to, date, seats });
+
         if (!from || !to || !date) {
           showError('معلومات البحث غير مكتملة');
           return;
         }
+
+        const requestData = {
+          departure_city: from,
+          destination_city: to,
+          date: date,
+          seats_needed: parseInt(seats)
+        };
+
+        console.log('Request data:', requestData);
+        console.log('API URL:', `${API_BASE_URL}/api/rides/search`);
 
         try {
           const response = await fetch(`${API_BASE_URL}/api/rides/search`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'Accept': 'application/json'
             },
-            body: JSON.stringify({
-              departure_city: from,
-              destination_city: to,
-              date: date,
-              seats_needed: parseInt(seats)
-            })
+            body: JSON.stringify(requestData)
           });
 
+          console.log('Response status:', response.status);
+          console.log('Response headers:', Object.fromEntries([...response.headers]));
+
           if (!response.ok) {
-            throw new Error('Network response was not ok');
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            throw new Error(`Network response was not ok: ${response.status} ${errorText}`);
           }
 
           const data = await response.json();
+          console.log('Response data:', data);
+
           const resultsContainer = document.getElementById('searchResults');
           
           if (!data.rides || data.rides.length === 0) {

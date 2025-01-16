@@ -1,10 +1,5 @@
 import os
-import sys
-
-# Add the current directory to Python path
-sys.path.insert(0, os.path.dirname(__file__))
-
-from app import app
+from alwahis import app
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))

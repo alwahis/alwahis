@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import os
 import logging
 import sys
+from sqlalchemy import text
 
 # Configure logging
 logging.basicConfig(
@@ -19,7 +20,7 @@ app = Flask(__name__)
 # Enable CORS for all routes with all origins
 CORS(app, resources={
     r"/*": {
-        "origins": ["https://alwahis.netlify.app", "http://localhost:5000"],
+        "origins": ["https://alwahis.netlify.app", "http://localhost:5000", "http://localhost:5001"],
         "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
     }
@@ -86,7 +87,7 @@ class RideRequest(db.Model):
 def health_check():
     try:
         # Test database connection
-        db.session.execute('SELECT 1')
+        db.session.execute(text('SELECT 1'))
         return jsonify({'status': 'healthy', 'database': 'connected'}), 200
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")

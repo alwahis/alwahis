@@ -422,7 +422,7 @@
       }
 
       .matching-requests {
-        margin-top: 2rem;
+        margin: 1rem 0;
         background: white;
         border-radius: 10px;
         padding: 1.5rem;
@@ -912,26 +912,38 @@
           car_details: form.querySelector('#carDetails').value || ''
         };
 
+        console.log('Publishing ride with data:', rideData);
+        console.log('API URL:', `${API_BASE_URL}/api/rides`);
+
         try {
           const response = await fetch(`${API_BASE_URL}/api/rides`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'Accept': 'application/json'
             },
             body: JSON.stringify(rideData)
           });
 
+          console.log('Response status:', response.status);
+          console.log('Response headers:', Object.fromEntries([...response.headers]));
+
           if (!response.ok) {
-            throw new Error('Network response was not ok');
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            throw new Error(`Network response was not ok: ${response.status} ${errorText}`);
           }
 
           const data = await response.json();
+          console.log('Response data:', data);
           
+          console.log('Fetching matching requests...');
           // Get matching requests
           const matchingResponse = await fetch(`${API_BASE_URL}/api/drivers/matching-requests`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'Accept': 'application/json'
             },
             body: JSON.stringify({
               departure_city: rideData.departure_city,
@@ -940,11 +952,19 @@
             })
           });
 
+          console.log('Matching response status:', matchingResponse.status);
+          console.log('Matching response headers:', Object.fromEntries([...matchingResponse.headers]));
+
           if (!matchingResponse.ok) {
-            throw new Error('Network response was not ok');
+            const errorText = await matchingResponse.text();
+            console.error('Matching error response:', errorText);
+            throw new Error(`Network response was not ok: ${matchingResponse.status} ${errorText}`);
           }
 
           const matchingData = await matchingResponse.json();
+          console.log('Matching response data:', matchingData);
+          
+          // Show success modal
           showSuccessModal(matchingData.matching_requests || []);
           
           // Reset form
