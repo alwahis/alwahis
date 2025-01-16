@@ -83,6 +83,68 @@
       color: #636e72;
     }
 
+    .phone-input {
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .phone-input input[type="tel"] {
+      padding: 0.8rem 1rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    .phone-input button {
+      background: linear-gradient(135deg, #FF8C00, #FFA500);
+      color: white;
+      text-decoration: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      display: inline-block;
+      font-weight: 500;
+      transition: transform 0.2s;
+    }
+
+    .phone-input button:hover {
+      transform: translateY(-2px);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .tab-btn {
+      background: #f8f9fa;
+      color: #2d3436;
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      display: inline-block;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      border: 1px solid #ddd;
+    }
+
+    .tab-btn:hover {
+      background: #f0f0f0;
+    }
+
+    .tab-btn.active {
+      background: #FF8C00;
+      color: white;
+    }
+
+    .tab-content {
+      padding: 2rem;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
     .rides-list {
       display: flex;
       flex-direction: column;
@@ -159,6 +221,22 @@
       background: #ff6b81;
     }
 
+    .contact-btn {
+      background: #34c759;
+      color: white;
+      border: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: transform 0.2s;
+    }
+
+    .contact-btn:hover {
+      transform: translateY(-2px);
+      background: #3e8e41;
+    }
+
     .no-rides {
       text-align: center;
       padding: 3rem;
@@ -190,50 +268,6 @@
 
     .publish-btn:hover {
       transform: translateY(-2px);
-    }
-
-    .status {
-      padding: 0.4rem 0.8rem;
-      border-radius: 4px;
-      font-size: 0.9rem;
-      font-weight: 500;
-    }
-
-    .status-active {
-      background: #e3fcef;
-      color: #00b894;
-    }
-
-    .status-cancelled {
-      background: #ffe3e3;
-      color: #ff4757;
-    }
-
-    .points-card {
-      background: white;
-      padding: 1.5rem;
-      border-radius: 10px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      margin-bottom: 2rem;
-      text-align: center;
-    }
-
-    .points-value {
-      font-size: 2rem;
-      font-weight: 600;
-      color: #FF8C00;
-      margin-bottom: 0.5rem;
-    }
-
-    .points-label {
-      font-size: 1.2rem;
-      color: #2d3436;
-      margin-right: 0.5rem;
-    }
-
-    .points-info {
-      color: #636e72;
-      font-size: 0.9rem;
     }
 
     .footer {
@@ -295,27 +329,38 @@
       <div class="logo">عالواهس</div>
       <div class="nav-links">
         <a href="index.html">الرئيسية</a>
-        <a href="publish-ride.html">نشر رحلة</a>
         <a href="my-rides.html" class="active">رحلاتي</a>
+        <a href="publish-ride.html">نشر رحلة</a>
       </div>
     </div>
   </nav>
 
   <div class="container">
-    <h1>رحلاتي</h1>
-    
-    <div class="points-card">
-      <div class="points-value">
-        <span id="pointsCount">10</span>
-        <span class="points-label">نقطة</span>
-      </div>
-      <div class="points-info">
-        يتم خصم نقطة واحدة عند نشر كل رحلة
+    <div class="page-header">
+      <h1>رحلاتي</h1>
+      <p>إدارة رحلاتك المنشورة وطلبات الحجز</p>
+    </div>
+
+    <div class="phone-input">
+      <input type="tel" id="phoneNumber" placeholder="أدخل رقم هاتفك (مثال: 07801234567)" pattern="^07[3-9]\d{8}$" required>
+      <button onclick="loadMyRides()">عرض رحلاتي</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('published')">رحلاتي المنشورة</button>
+      <button class="tab-btn" onclick="showTab('requests')">طلبات الحجز</button>
+    </div>
+
+    <div id="publishedTab" class="tab-content">
+      <div id="publishedRides" class="rides-list">
+        <!-- Rides will be loaded here -->
       </div>
     </div>
 
-    <div id="ridesList" class="rides-list">
-      <!-- Rides will be loaded here -->
+    <div id="requestsTab" class="tab-content" style="display: none;">
+      <div id="rideRequests" class="rides-list">
+        <!-- Requests will be loaded here -->
+      </div>
     </div>
   </div>
 
@@ -329,118 +374,191 @@
   </footer>
 
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      loadMyRides();
-      loadPoints();
-    });
+    let currentPhone = '';
 
     function loadMyRides() {
-      // Get driver's phone number from localStorage
-      const driverPhone = localStorage.getItem('driverPhone');
-      if (!driverPhone) {
-        showNoRides('لم يتم العثور على رقم هاتفك. يرجى نشر رحلة جديدة أولاً.');
+      const phoneInput = document.getElementById('phoneNumber');
+      const phone = phoneInput.value;
+
+      // Validate phone number
+      if (!phone.match(/^07[3-9]\d{8}$/)) {
+        alert('رقم الهاتف غير صحيح. يجب أن يبدأ بـ 07 ويتكون من 11 رقم');
         return;
       }
 
-      // Get all published rides
+      currentPhone = phone;
+      loadPublishedRides();
+      loadRideRequests();
+    }
+
+    function loadPublishedRides() {
+      const publishedRides = document.getElementById('publishedRides');
       const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
-      
-      // Filter rides by driver's phone and sort by date (newest first)
-      const myRides = rides
-        .filter(ride => ride.phone === driverPhone)
-        .sort((a, b) => new Date(b.rawDateTime) - new Date(a.rawDateTime));
+      const myRides = rides.filter(ride => ride.driver_phone === currentPhone);
 
-      const ridesContainer = document.getElementById('ridesList');
-      
       if (myRides.length === 0) {
-        showNoRides('لم تقم بنشر أي رحلات بعد.');
+        publishedRides.innerHTML = `
+          <div class="no-rides">
+            <h2>لا توجد رحلات منشورة</h2>
+            <p>لم تقم بنشر أي رحلات بعد. يمكنك نشر رحلة جديدة الآن!</p>
+            <a href="publish-ride.html" class="publish-btn">نشر رحلة جديدة</a>
+          </div>
+        `;
         return;
       }
 
-      ridesContainer.innerHTML = myRides.map(ride => `
-        <div class="ride-card" data-ride-id="${ride.id}">
+      publishedRides.innerHTML = myRides.map(ride => `
+        <div class="ride-card">
           <div class="ride-header">
             <div class="route-info">
               <span>${ride.from}</span>
-              <span>→</span>
+              <i class="fas fa-arrow-left"></i>
               <span>${ride.to}</span>
             </div>
-            <div class="price">${ride.price} د.ع</div>
-          </div>
-          
-          <div class="ride-details">
-            <div class="detail-item">
-              <span>التاريخ:</span>
-              <span>${ride.date}</span>
-            </div>
-            <div class="detail-item">
-              <span>الوقت:</span>
-              <span>${ride.time}</span>
-            </div>
-            <div class="detail-item">
-              <span>نوع السيارة:</span>
-              <span>${ride.car === 'suv' ? 'دفع رباعي' : 'صالون'}</span>
-            </div>
-            <div class="detail-item">
-              <span>المقاعد المتوفرة:</span>
-              <span>${ride.seats}</span>
-            </div>
-            <div class="detail-item">
-              <span>الحالة:</span>
-              <span class="status ${ride.cancelled ? 'status-cancelled' : 'status-active'}">
-                ${ride.cancelled ? 'ملغية' : 'نشطة'}
-              </span>
+            <div class="price">
+              ${ride.price_per_seat} د.ع
             </div>
           </div>
 
-          ${!ride.cancelled ? `
-            <div class="ride-actions">
-              <button class="cancel-btn" onclick="cancelRide('${ride.id}')">
-                إلغاء الرحلة
-              </button>
+          <div class="ride-details">
+            <div class="detail-item">
+              <i class="fas fa-calendar"></i>
+              <span>${formatDate(ride.date)}</span>
             </div>
-          ` : ''}
+            <div class="detail-item">
+              <i class="fas fa-clock"></i>
+              <span>${ride.time}</span>
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-car"></i>
+              <span>${ride.car_type === 'suv' ? 'دفع رباعي' : 'صالون'}</span>
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-users"></i>
+              <span>${ride.available_seats}/${ride.total_seats} مقاعد</span>
+            </div>
+          </div>
+
+          <div class="ride-actions">
+            <button onclick="cancelRide('${ride.id}')" class="cancel-btn">
+              <i class="fas fa-times"></i>
+              إلغاء الرحلة
+            </button>
+          </div>
         </div>
       `).join('');
     }
 
-    function showNoRides(message) {
-      const ridesContainer = document.getElementById('ridesList');
-      ridesContainer.innerHTML = `
-        <div class="no-rides">
-          <h2>لا توجد رحلات</h2>
-          <p>${message}</p>
-          <a href="publish-ride.html" class="publish-btn">نشر رحلة جديدة</a>
-        </div>
-      `;
-    }
+    function loadRideRequests() {
+      const requestsDiv = document.getElementById('rideRequests');
+      const requests = JSON.parse(localStorage.getItem('rideRequests') || '[]');
+      const myRequests = requests.filter(req => {
+        const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+        const ride = rides.find(r => r.id === req.ride_id);
+        return ride && ride.driver_phone === currentPhone;
+      });
 
-    function loadPoints() {
-      const phone = localStorage.getItem('driverPhone');
-      if (!phone) return;
-
-      const driverPoints = JSON.parse(localStorage.getItem('driverPoints') || '{}');
-      const points = driverPoints[phone] || 10;
-      document.getElementById('pointsCount').textContent = points;
-    }
-
-    function cancelRide(rideId) {
-      if (!confirm('هل أنت متأكد من إلغاء هذه الرحلة؟')) {
+      if (myRequests.length === 0) {
+        requestsDiv.innerHTML = `
+          <div class="no-rides">
+            <h2>لا توجد طلبات حجز</h2>
+            <p>لم تتلق أي طلبات حجز على رحلاتك بعد.</p>
+          </div>
+        `;
         return;
       }
 
-      // Get all rides
-      const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+      requestsDiv.innerHTML = myRequests.map(req => `
+        <div class="ride-card">
+          <div class="ride-header">
+            <div class="route-info">
+              <span>${req.from}</span>
+              <i class="fas fa-arrow-left"></i>
+              <span>${req.to}</span>
+            </div>
+          </div>
+
+          <div class="ride-details">
+            <div class="detail-item">
+              <i class="fas fa-user"></i>
+              <span>${req.passenger_name}</span>
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-phone"></i>
+              <span>${req.passenger_phone}</span>
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-users"></i>
+              <span>${req.seats} مقاعد</span>
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-calendar"></i>
+              <span>${formatDate(req.date)}</span>
+            </div>
+          </div>
+
+          <div class="ride-actions">
+            <button onclick="contactPassenger('${req.passenger_phone}', '${req.from}', '${req.to}', '${req.date}', ${req.seats})" class="contact-btn">
+              <i class="fab fa-whatsapp"></i>
+              تواصل مع الراكب
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function showTab(tabName) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.style.display = 'none';
+      });
       
-      // Find and update the ride
-      const rideIndex = rides.findIndex(ride => ride.id === rideId);
-      if (rideIndex !== -1) {
-        rides[rideIndex].cancelled = true;
-        localStorage.setItem('publishedRides', JSON.stringify(rides));
-        
-        // Reload the rides list
-        loadMyRides();
+      // Remove active class from all buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      // Show selected tab
+      document.getElementById(tabName + 'Tab').style.display = 'block';
+      
+      // Add active class to clicked button
+      document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
+    }
+
+    function cancelRide(rideId) {
+      if (confirm('هل أنت متأكد من إلغاء هذه الرحلة؟')) {
+        try {
+          const rides = JSON.parse(localStorage.getItem('publishedRides') || '[]');
+          const updatedRides = rides.filter(ride => ride.id !== rideId);
+          localStorage.setItem('publishedRides', JSON.stringify(updatedRides));
+          loadMyRides();
+        } catch (error) {
+          console.error('Error canceling ride:', error);
+          alert('حدث خطأ أثناء إلغاء الرحلة');
+        }
       }
+    }
+
+    function contactPassenger(phone, from, to, date, seats) {
+      const message = encodeURIComponent(`السلام عليكم، تم قبول طلب حجز ${seats} مقاعد لرحلة ${from} إلى ${to} بتاريخ ${formatDate(date)}`);
+      const formattedPhone = formatPhone(phone);
+      window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
+    }
+
+    function formatPhone(phone) {
+      let digits = phone.replace(/\D/g, '');
+      if (digits.startsWith('0')) {
+        digits = '964' + digits.slice(1);
+      }
+      if (!digits.startsWith('964')) {
+        digits = '964' + digits;
+      }
+      return digits;
+    }
+
+    function formatDate(dateStr) {
+      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      return new Date(dateStr).toLocaleDateString('ar-IQ', options);
     }
   </script>
 </body>
