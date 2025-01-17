@@ -1,11 +1,11 @@
 [build]
-  command = "npm ci && npm run build"
+  command = "rm -rf node_modules package-lock.json && npm install && npm run build"
   publish = "build"
 
 [build.environment]
   NODE_VERSION = "18"
   CI = "false"
-  BUILD_TRIGGER = "2025-01-17-2"
+  BUILD_TRIGGER = "2025-01-17-3"
 
 [[redirects]]
   from = "/*"
