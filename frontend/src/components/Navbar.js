@@ -1,93 +1,77 @@
-import React, { useState, useEffect } from 'react';
-import { AppBar, Toolbar, Typography, Button, Box, IconButton, Menu, MenuItem } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link as RouterLink } from 'react-router-dom';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Box,
+  Container,
+} from '@mui/material';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
-import MenuIcon from '@mui/icons-material/Menu';
+import SearchIcon from '@mui/icons-material/Search';
+import PersonIcon from '@mui/icons-material/Person';
 
-const Navbar = () => {
-  const navigate = useNavigate();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [anchorEl, setAnchorEl] = useState(null);
-
-  useEffect(() => {
-    const token = localStorage.getItem('adminToken');
-    setIsAdmin(!!token);
-  }, []);
-
-  const handleMenu = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
+function Navbar() {
   return (
-    <AppBar position="static" sx={{ bgcolor: '#FF8C00' }}>
-      <Toolbar>
-        <DirectionsCarIcon sx={{ mr: 2 }} />
-        <Typography 
-          variant="h6" 
-          component="div" 
-          sx={{ flexGrow: 1, cursor: 'pointer' }} 
-          onClick={() => navigate('/')}
-        >
-          الوحيس
-        </Typography>
-        
-        <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-          <Button color="inherit" onClick={() => navigate('/')}>
-            الرئيسية
-          </Button>
-          <Button color="inherit" onClick={() => navigate('/rider')}>
-            احجز رحلة
-          </Button>
-          <Button color="inherit" onClick={() => navigate('/driver')}>
-            كن سائقاً
-          </Button>
-          {isAdmin && (
-            <Button color="inherit" onClick={() => navigate('/admin')}>
-              لوحة التحكم
-            </Button>
-          )}
-        </Box>
+    <AppBar position="static">
+      <Container maxWidth="lg">
+        <Toolbar disableGutters>
+          <Typography
+            variant="h6"
+            component={RouterLink}
+            to="/"
+            sx={{
+              mr: 2,
+              fontWeight: 700,
+              color: 'inherit',
+              textDecoration: 'none',
+              flexGrow: { xs: 1, md: 0 },
+            }}
+          >
+            عالواهس
+          </Typography>
 
-        <Box sx={{ display: { xs: 'block', md: 'none' } }}>
-          <IconButton
-            size="large"
-            edge="start"
-            color="inherit"
-            aria-label="menu"
-            onClick={handleMenu}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Menu
-            id="menu-appbar"
-            anchorEl={anchorEl}
-            anchorOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            keepMounted
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            open={Boolean(anchorEl)}
-            onClose={handleClose}
-          >
-            <MenuItem onClick={() => { navigate('/'); handleClose(); }}>الرئيسية</MenuItem>
-            <MenuItem onClick={() => { navigate('/rider'); handleClose(); }}>احجز رحلة</MenuItem>
-            <MenuItem onClick={() => { navigate('/driver'); handleClose(); }}>كن سائقاً</MenuItem>
-            {isAdmin && (
-              <MenuItem onClick={() => { navigate('/admin'); handleClose(); }}>لوحة التحكم</MenuItem>
-            )}
-          </Menu>
-        </Box>
-      </Toolbar>
+          <Box sx={{ flexGrow: 1, display: 'flex', gap: 2, justifyContent: 'center' }}>
+            <Button
+              color="inherit"
+              component={RouterLink}
+              to="/search"
+              startIcon={<SearchIcon />}
+            >
+              ابحث عن رحلة
+            </Button>
+            <Button
+              color="inherit"
+              component={RouterLink}
+              to="/offer"
+              startIcon={<DirectionsCarIcon />}
+            >
+              اعرض رحلة
+            </Button>
+            <Button
+              color="inherit"
+              component={RouterLink}
+              to="/my-rides"
+            >
+              رحلاتي
+            </Button>
+          </Box>
+
+          <Box sx={{ flexGrow: 0 }}>
+            <Button
+              color="inherit"
+              component={RouterLink}
+              to="/profile"
+              startIcon={<PersonIcon />}
+            >
+              الملف الشخصي
+            </Button>
+          </Box>
+        </Toolbar>
+      </Container>
     </AppBar>
   );
-};
+}
 
 export default Navbar;

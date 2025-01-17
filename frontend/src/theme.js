@@ -5,15 +5,15 @@ const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#4169E1', // Royal Blue
-      light: '#6B8DE4',
-      dark: '#3457B2',
+      main: '#FF8C00', // Royal Orange
+      light: '#FFA333',
+      dark: '#CC7000',
       contrastText: '#ffffff',
     },
     secondary: {
-      main: '#4169E1',
-      light: '#6B8DE4',
-      dark: '#3457B2',
+      main: '#FFA333',
+      light: '#FFB966',
+      dark: '#CC8229',
       contrastText: '#ffffff',
     },
     background: {
@@ -27,6 +27,27 @@ const theme = createTheme({
   },
   typography: {
     fontFamily: 'Cairo, sans-serif',
+    h1: {
+      fontWeight: 700,
+    },
+    h2: {
+      fontWeight: 600,
+    },
+    h3: {
+      fontWeight: 600,
+    },
+    h4: {
+      fontWeight: 600,
+    },
+    h5: {
+      fontWeight: 500,
+    },
+    h6: {
+      fontWeight: 500,
+    },
+    button: {
+      fontWeight: 600,
+    },
   },
   components: {
     MuiButton: {
@@ -35,6 +56,7 @@ const theme = createTheme({
           textTransform: 'none',
           borderRadius: 8,
           fontWeight: 600,
+          padding: '8px 24px',
         },
       },
     },
@@ -42,14 +64,14 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 12,
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          boxShadow: '0 2px 12px 0 rgba(0,0,0,0.1)',
         },
       },
     },
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: '#4169E1',
+          backgroundColor: '#FF8C00',
         },
       },
     },
