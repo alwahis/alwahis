@@ -4,9 +4,9 @@ const theme = createTheme({
   direction: 'rtl',
   palette: {
     primary: {
-      main: '#FF8C00', // Dark orange
-      light: '#FFA533',
-      dark: '#CC7000',
+      main: '#4169E1', // Royal Blue
+      light: '#6B8DE4',
+      dark: '#3457B2',
     },
     secondary: {
       main: '#1976d2',
@@ -39,3 +39,5 @@ const theme = createTheme({
     },
   },
 });
+
+export default theme;
