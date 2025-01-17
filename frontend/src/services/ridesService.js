@@ -145,6 +145,57 @@ export const ridesService = {
     }
   },
 
+  // Test function to verify Supabase connection
+  async testConnection() {
+    try {
+      console.log('Testing Supabase connection...');
+      
+      // First, try to create a test ride
+      const testRide = {
+        from_location: 'الرياض - حي الملقا',
+        to_location: 'جدة - حي الروضة',
+        departure_time: new Date('2025-01-18T10:00:00Z').toISOString(),
+        available_seats: 3,
+        price_per_seat: 150,
+        whatsapp_number: '966500000000',
+        status: 'published'
+      };
+
+      console.log('Creating test ride:', testRide);
+      const { data: createData, error: createError } = await supabase
+        .from('rides')
+        .insert([testRide])
+        .select();
+
+      if (createError) {
+        console.error('Error creating test ride:', createError);
+        return { error: createError };
+      }
+      console.log('Test ride created:', createData);
+
+      // Now try to search for the ride
+      const searchParams = {
+        from: 'الرياض',
+        to: 'جدة',
+        date: new Date('2025-01-18')
+      };
+
+      console.log('Searching for test ride:', searchParams);
+      const { data: searchData, error: searchError } = await this.searchRides(searchParams);
+
+      if (searchError) {
+        console.error('Error searching for test ride:', searchError);
+        return { error: searchError };
+      }
+      console.log('Search results:', searchData);
+
+      return { data: { created: createData, searched: searchData }, error: null };
+    } catch (error) {
+      console.error('Error in test connection:', error);
+      return { error };
+    }
+  },
+
   // Update ride status
   async updateRideStatus(rideId, status) {
     try {
