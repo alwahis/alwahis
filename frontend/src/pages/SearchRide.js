@@ -38,11 +38,14 @@ const SearchRide = () => {
     setLoading(true);
     setError(null);
     try {
+      console.log('Search params:', searchParams);
       const { data, error } = await ridesService.searchRides(searchParams);
+      console.log('Search result:', { data, error });
       if (error) throw error;
       setRides(data || []);
       setSearchPerformed(true);
     } catch (err) {
+      console.error('Search error:', err);
       setError('حدث خطأ أثناء البحث عن الرحلات');
     } finally {
       setLoading(false);
