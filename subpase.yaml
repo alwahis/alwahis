@@ -4,10 +4,10 @@ services:
     env: python
     buildCommand: |
       pip install -r requirements.txt
-      pip install gunicorn
+      pip install -e .
     startCommand: |
-      python3 -c "from app import db; db.create_all()"
-      gunicorn app:app --log-level debug --workers=2 --threads=4 --timeout=60 --bind 0.0.0.0:$PORT
+      python3 -c "from alwahis import app; from alwahis.models import db; db.create_all()"
+      gunicorn "alwahis:app" --log-level debug --workers=2 --threads=4 --timeout=60 --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
