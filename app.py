@@ -45,46 +45,13 @@ cache = Cache(app, config={
     'CACHE_DEFAULT_TIMEOUT': 300
 })
 
-app = Flask(__name__)
-
-# CORS configuration
-CORS(app, resources={
-    r"/*": {
-        "origins": ["https://alwahis.netlify.app", "http://localhost:5000", "http://localhost:5001"],
-        "methods": ["GET", "POST", "PUT", "DELETE"],
-        "allow_headers": ["Content-Type", "Authorization"]
-    }
-})
-
-@app.route('/')
-def home():
-    try:
-        # Return basic API status
-        return jsonify({
-            'status': 'success',
-            'message': 'Alwahis API is running',
-            'version': '1.0'
-        })
-    except Exception as e:
-        logger.error(f"Error in home route: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-@app.errorhandler(404)
-def not_found(e):
-    return jsonify({'error': 'Not found'}), 404
-
-@app.errorhandler(500)
-def internal_error(e):
-    return jsonify({'error': 'Internal server error'}), 500
-
 # Database configuration
-DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///alwahis.db')
+DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://postgres:your-super-secret-password@localhost:5432/postgres')
 app.config.update(
     SQLALCHEMY_DATABASE_URI=DATABASE_URL,
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
-    SECRET_KEY=os.environ.get('SECRET_KEY', 'dev_key')
+    JSON_SORT_KEYS=False
 )
-
 db = SQLAlchemy(app)
 
 class User(db.Model):
@@ -182,6 +149,27 @@ def validate_ride_data(data):
     
     return errors
 
+@app.route('/')
+def home():
+    try:
+        # Return basic API status
+        return jsonify({
+            'status': 'success',
+            'message': 'Alwahis API is running',
+            'version': '1.0'
+        })
+    except Exception as e:
+        logger.error(f"Error in home route: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({'error': 'Not found'}), 404
+
+@app.errorhandler(500)
+def internal_error(e):
+    return jsonify({'error': 'Internal server error'}), 500
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     try:
@@ -255,7 +243,7 @@ def search_rides():
         data = request.get_json()
         logger.info(f"Received search request with data: {data}")
         
-        # Extract search parameters
+        # Extract search parameters with proper defaults matching the database function
         departure_city = data.get('departure_city')
         destination_city = data.get('destination_city')
         date = data.get('date')
@@ -264,8 +252,8 @@ def search_rides():
         departure_time_start = data.get('departure_time_start')
         departure_time_end = data.get('departure_time_end')
         min_available_seats = data.get('min_available_seats', 1)
-        sort_by = data.get('sort_by', 'departure_time')  # Default sort by departure time
-        sort_order = data.get('sort_order', 'asc')  # Default ascending order
+        sort_by = data.get('sort_by', 'departure_time')
+        sort_order = data.get('sort_order', 'asc')
         page = data.get('page', 1)
         per_page = data.get('per_page', 10)
 
@@ -284,95 +272,42 @@ def search_rides():
             return jsonify({'error': error_msg}), 400
 
         try:
-            search_date = datetime.strptime(date, '%Y-%m-%d')
+            search_date = datetime.strptime(date, '%Y-%m-%d').date()
             logger.info(f"Parsed date: {search_date}")
         except ValueError as e:
             error_msg = f"Invalid date format. Please use YYYY-MM-DD format. Error: {str(e)}"
             logger.error(error_msg)
             return jsonify({'error': error_msg}), 400
 
-        # Build base query
-        query = db.session.query(Ride, Car, User).join(
-            Car, Ride.car_id == Car.id
-        ).join(
-            User, Ride.driver_id == User.id
-        ).filter(
-            Ride.status == 'active',
-            Ride.departure_city == departure_city,
-            Ride.destination_city == destination_city,
-            Ride.departure_time >= search_date,
-            Ride.departure_time < search_date + timedelta(days=1),
-            Ride.available_seats >= min_available_seats
-        )
+        # Convert time strings to time objects if provided
+        try:
+            departure_time_start = datetime.strptime(departure_time_start, '%H:%M').time() if departure_time_start else None
+            departure_time_end = datetime.strptime(departure_time_end, '%H:%M').time() if departure_time_end else None
+        except ValueError:
+            return jsonify({'error': 'Invalid time format. Use HH:MM'}), 400
 
-        # Add optional filters
-        if min_price is not None:
-            query = query.filter(Ride.price_per_seat >= min_price)
-        if max_price is not None:
-            query = query.filter(Ride.price_per_seat <= max_price)
-        if departure_time_start:
-            try:
-                start_time = datetime.strptime(departure_time_start, '%H:%M')
-                query = query.filter(Ride.departure_time >= datetime.combine(search_date.date(), start_time.time()))
-            except ValueError:
-                return jsonify({'error': 'Invalid departure_time_start format. Use HH:MM'}), 400
-        if departure_time_end:
-            try:
-                end_time = datetime.strptime(departure_time_end, '%H:%M')
-                query = query.filter(Ride.departure_time <= datetime.combine(search_date.date(), end_time.time()))
-            except ValueError:
-                return jsonify({'error': 'Invalid departure_time_end format. Use HH:MM'}), 400
-
-        # Apply sorting
-        if sort_by == 'price':
-            query = query.order_by(Ride.price_per_seat.asc() if sort_order == 'asc' else Ride.price_per_seat.desc())
-        elif sort_by == 'available_seats':
-            query = query.order_by(Ride.available_seats.asc() if sort_order == 'asc' else Ride.available_seats.desc())
-        else:  # default to departure_time
-            query = query.order_by(Ride.departure_time.asc() if sort_order == 'asc' else Ride.departure_time.desc())
-
-        # Apply pagination
-        total_rides = query.count()
-        rides = query.offset((page - 1) * per_page).limit(per_page).all()
-
-        rides_data = []
-        for ride, car, driver in rides:
-            rides_data.append({
-                'id': ride.id,
-                'departure_city': ride.departure_city,
-                'destination_city': ride.destination_city,
-                'departure_time': ride.departure_time.isoformat(),
-                'available_seats': ride.available_seats,
-                'price_per_seat': ride.price_per_seat,
-                'car_type': car.car_type,
-                'driver_phone': driver.phone,
-                'car_details': car.car_details,
-                'car_photo': car.photo_url
-            })
-
-        return jsonify({
-            'rides': rides_data,
-            'pagination': {
-                'current_page': page,
-                'per_page': per_page,
-                'total_items': total_rides,
-                'total_pages': (total_rides + per_page - 1) // per_page
-            },
-            'filters': {
-                'departure_city': departure_city,
-                'destination_city': destination_city,
-                'date': date,
-                'min_price': min_price,
-                'max_price': max_price,
-                'departure_time_start': departure_time_start,
-                'departure_time_end': departure_time_end,
-                'min_available_seats': min_available_seats
-            },
-            'sorting': {
-                'sort_by': sort_by,
-                'sort_order': sort_order
+        # Call the database search_rides function
+        result = db.session.execute(
+            text('SELECT search_rides(:p_departure_city, :p_destination_city, :p_date, :p_min_price, :p_max_price, '
+                 ':p_departure_time_start, :p_departure_time_end, :p_min_available_seats, :p_sort_by, :p_sort_order, '
+                 ':p_page, :p_per_page)'),
+            {
+                'p_departure_city': departure_city,
+                'p_destination_city': destination_city,
+                'p_date': search_date,
+                'p_min_price': min_price,
+                'p_max_price': max_price,
+                'p_departure_time_start': departure_time_start,
+                'p_departure_time_end': departure_time_end,
+                'p_min_available_seats': min_available_seats,
+                'p_sort_by': sort_by,
+                'p_sort_order': sort_order,
+                'p_page': page,
+                'p_per_page': per_page
             }
-        }), 200
+        ).scalar()
+
+        return jsonify(result), 200
 
     except Exception as e:
         logger.error(f"Error in search_rides: {str(e)}")
