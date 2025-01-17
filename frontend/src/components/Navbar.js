@@ -10,7 +10,6 @@ import {
 } from '@mui/material';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import SearchIcon from '@mui/icons-material/Search';
-import PersonIcon from '@mui/icons-material/Person';
 
 function Navbar() {
   return (
@@ -48,24 +47,6 @@ function Navbar() {
               startIcon={<DirectionsCarIcon />}
             >
               اعرض رحلة
-            </Button>
-            <Button
-              color="inherit"
-              component={RouterLink}
-              to="/my-rides"
-            >
-              رحلاتي
-            </Button>
-          </Box>
-
-          <Box sx={{ flexGrow: 0 }}>
-            <Button
-              color="inherit"
-              component={RouterLink}
-              to="/profile"
-              startIcon={<PersonIcon />}
-            >
-              الملف الشخصي
             </Button>
           </Box>
         </Toolbar>

@@ -5,8 +5,6 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import SearchRide from './pages/SearchRide';
 import OfferRide from './pages/OfferRide';
-import MyRides from './pages/MyRides';
-import Profile from './pages/Profile';
 
 function App() {
   return (
@@ -18,8 +16,6 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/search" element={<SearchRide />} />
             <Route path="/offer" element={<OfferRide />} />
-            <Route path="/my-rides" element={<MyRides />} />
-            <Route path="/profile" element={<Profile />} />
           </Routes>
         </Box>
       </Box>

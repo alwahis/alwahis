@@ -1,13 +1,11 @@
 import React from 'react';
 import { Container, Typography, Box, Button, Grid, Paper } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import SearchIcon from '@mui/icons-material/Search';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 
 const Home = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   return (
     <Container maxWidth="lg">
@@ -51,37 +49,13 @@ const Home = () => {
               <Button 
                 variant="contained" 
                 size="large"
-                onClick={() => user ? navigate('/my-rides') : navigate('/login')}
+                onClick={() => navigate('/offer')}
               >
-                {user ? 'انشر رحلة' : 'سجل دخول لنشر رحلة'}
+                انشر الآن
               </Button>
             </Paper>
           </Grid>
         </Grid>
-
-        {!user && (
-          <Box sx={{ mt: 6 }}>
-            <Typography variant="h5" gutterBottom>
-              هل لديك حساب؟
-            </Typography>
-            <Button 
-              variant="outlined" 
-              size="large"
-              onClick={() => navigate('/login')}
-              sx={{ mx: 1 }}
-            >
-              تسجيل الدخول
-            </Button>
-            <Button 
-              variant="contained" 
-              size="large"
-              onClick={() => navigate('/register')}
-              sx={{ mx: 1 }}
-            >
-              إنشاء حساب جديد
-            </Button>
-          </Box>
-        )}
       </Box>
     </Container>
   );
