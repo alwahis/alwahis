@@ -172,7 +172,7 @@ const OfferRide = () => {
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={8}>
                       <Typography variant="h6">
-                        {request.from_location} → {request.to_location}
+                        {request.departure_city} → {request.destination_city}
                       </Typography>
                       <Typography color="textSecondary">
                         {new Date(request.preferred_date).toLocaleDateString('ar-IQ')}

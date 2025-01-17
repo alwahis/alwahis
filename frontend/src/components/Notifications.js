@@ -123,7 +123,7 @@ const Notifications = () => {
   const formatNotification = (notification) => {
     switch (notification.type) {
       case 'new_request':
-        return `طلب حجز جديد للرحلة من ${notification.data.from_location} إلى ${notification.data.to_location}`;
+        return `طلب حجز جديد للرحلة من ${notification.data.departure_city} إلى ${notification.data.destination_city}`;
       case 'request_accepted':
         return 'تم قبول طلب حجزك';
       case 'request_rejected':

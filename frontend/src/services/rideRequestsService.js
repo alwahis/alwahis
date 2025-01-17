@@ -8,7 +8,7 @@ export const rideRequestsService = {
         .from('ride_requests')
         .insert([
           {
-            from_location: requestData.from,
+            departure_city: requestData.from,
             to_location: requestData.to,
             preferred_date: requestData.date,
             whatsapp_number: requestData.whatsappNumber,
@@ -49,7 +49,7 @@ export const rideRequestsService = {
         .eq('status', 'open');
 
       if (searchParams.from) {
-        query = query.ilike('from_location', `%${searchParams.from}%`);
+        query = query.ilike('departure_city', `%${searchParams.from}%`);
       }
       if (searchParams.to) {
         query = query.ilike('to_location', `%${searchParams.to}%`);

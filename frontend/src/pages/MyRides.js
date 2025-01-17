@@ -28,7 +28,7 @@ const MyRides = () => {
   const [loading, setLoading] = useState(true);
   const [openNewRide, setOpenNewRide] = useState(false);
   const [newRide, setNewRide] = useState({
-    from_location: '',
+    departure_city: '',
     to_location: '',
     departure_date: null,
     seats_available: '',
@@ -131,9 +131,9 @@ const MyRides = () => {
               <TextField
                 fullWidth
                 label="من"
-                value={newRide.from_location}
+                value={newRide.departure_city}
                 onChange={(e) =>
-                  setNewRide({ ...newRide, from_location: e.target.value })
+                  setNewRide({ ...newRide, departure_city: e.target.value })
                 }
               />
             </Grid>

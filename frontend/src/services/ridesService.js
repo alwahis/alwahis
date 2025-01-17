@@ -12,7 +12,7 @@ export const ridesService = {
         .from('rides')
         .insert([
           {
-            from_location: rideData.from,
+            departure_city: rideData.from,
             to_location: rideData.to,
             departure_time: rideData.date?.toISOString(),
             available_seats: parseInt(rideData.seats) || 1,
@@ -138,7 +138,7 @@ export const ridesService = {
       
       // First, try to create a test ride
       const testRide = {
-        from_location: 'الرياض - حي الملقا',
+        departure_city: 'الرياض - حي الملقا',
         to_location: 'جدة - حي الروضة',
         departure_time: new Date('2025-01-18T10:00:00Z').toISOString(),
         available_seats: 3,
@@ -161,8 +161,8 @@ export const ridesService = {
 
       // Now try to search for the ride
       const searchParams = {
-        from: 'الرياض',
-        to: 'جدة',
+        departure_city: 'الرياض',
+        destination_city: 'جدة',
         date: new Date('2025-01-18')
       };
 

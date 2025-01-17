@@ -42,8 +42,8 @@ const RideCard = ({ ride, onRequest, showDriverInfo = true }) => {
           <Grid item xs={12} sm={showDriverInfo ? 8 : 12}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <DirectionsCar sx={{ mr: 1 }} />
-              <Typography variant="h6">
-                {ride.from_location} → {ride.to_location}
+              <Typography variant="h6" component="div">
+                {ride.departure_city} → {ride.destination_city}
               </Typography>
             </Box>
 
