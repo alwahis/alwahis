@@ -1,15 +1,43 @@
-import { supabase } from '../config/supabase';
+import { supabase } from '../supabaseClient';
 
 export const ridesService = {
   // Create a new ride
   async createRide(rideData) {
-    const { data, error } = await supabase
-      .from('rides')
-      .insert([rideData])
-      .select()
-      .single();
-    
-    return { data, error };
+    try {
+      const { data, error } = await supabase
+        .from('rides')
+        .insert([
+          {
+            from_location: rideData.from,
+            to_location: rideData.to,
+            departure_time: rideData.date,
+            available_seats: rideData.seats,
+            price_per_seat: rideData.price,
+            notes: rideData.notes,
+          },
+        ])
+        .select();
+
+      return { data, error };
+    } catch (error) {
+      console.error('Error creating ride:', error);
+      return { error };
+    }
+  },
+
+  // Get all rides
+  async getRides() {
+    try {
+      const { data, error } = await supabase
+        .from('rides')
+        .select('*')
+        .order('departure_time', { ascending: true });
+
+      return { data, error };
+    } catch (error) {
+      console.error('Error fetching rides:', error);
+      return { error };
+    }
   },
 
   // Get all published rides
