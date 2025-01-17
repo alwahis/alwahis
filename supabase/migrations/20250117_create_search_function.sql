@@ -21,7 +21,20 @@ DECLARE
   v_limit integer;
   v_total_count integer;
   v_rides json;
+  v_valid_sort_by text;
+  v_valid_sort_order text;
 BEGIN
+  -- Validate sort parameters
+  v_valid_sort_by := CASE 
+    WHEN p_sort_by IN ('price', 'departure_time', 'available_seats') THEN p_sort_by 
+    ELSE 'departure_time' 
+  END;
+  
+  v_valid_sort_order := CASE 
+    WHEN LOWER(p_sort_order) IN ('asc', 'desc') THEN LOWER(p_sort_order) 
+    ELSE 'asc' 
+  END;
+
   -- Calculate offset and limit for pagination
   v_offset := (p_page - 1) * p_per_page;
   v_limit := p_per_page;
@@ -30,7 +43,7 @@ BEGIN
   WITH filtered_rides AS (
     SELECT *
     FROM rides
-    WHERE status = 'published'
+    WHERE status = 'active'
       AND departure_city = p_departure_city
       AND destination_city = p_destination_city
       AND date_trunc('day', departure_time) = p_date
@@ -55,14 +68,11 @@ BEGIN
     SELECT *
     FROM filtered_rides
     ORDER BY
-      CASE 
-        WHEN p_sort_by = 'price' AND p_sort_order = 'asc' THEN price_per_seat::text
-        WHEN p_sort_by = 'price' AND p_sort_order = 'desc' THEN price_per_seat::text
-        WHEN p_sort_by = 'departure_time' AND p_sort_order = 'asc' THEN departure_time::text
-        WHEN p_sort_by = 'departure_time' AND p_sort_order = 'desc' THEN departure_time::text
-        WHEN p_sort_by = 'available_seats' AND p_sort_order = 'asc' THEN available_seats::text
-        WHEN p_sort_by = 'available_seats' AND p_sort_order = 'desc' THEN available_seats::text
-      END
+      CASE v_valid_sort_by
+        WHEN 'price' THEN price_per_seat::text
+        WHEN 'departure_time' THEN departure_time::text
+        WHEN 'available_seats' THEN available_seats::text
+      END || CASE WHEN v_valid_sort_order = 'desc' THEN ' DESC' ELSE ' ASC' END
     LIMIT v_limit
     OFFSET v_offset
   ) r;
@@ -70,3 +80,6 @@ BEGIN
   RETURN v_rides;
 END;
 $$;
+
+-- Refresh PostgREST schema cache
+NOTIFY pgrst, 'reload schema';
