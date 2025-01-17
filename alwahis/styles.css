@@ -1,6 +1,6 @@
 :root {
-    --primary-color: #2563eb;
-    --primary-hover: #1d4ed8;
+    --primary-color: #4169E1;
+    --primary-hover: #3457B2;
     --background: #f1f5f9;
     --card-bg: #ffffff;
     --text: #1e293b;
@@ -8,7 +8,7 @@
     --border: #e2e8f0;
     --success: #22c55e;
     --error: #ef4444;
-    --brand-color: #ef4444;
+    --brand-color: #3457B2;
 }
 
 * {
