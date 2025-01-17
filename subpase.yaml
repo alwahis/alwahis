@@ -5,9 +5,8 @@ services:
     buildCommand: |
       pip install -r requirements.txt
       pip install -e .
-    startCommand: |
-      python3 -c "from alwahis import app; from alwahis.models import db; db.create_all()"
-      gunicorn "alwahis:app" --log-level debug --workers=2 --threads=4 --timeout=60 --bind 0.0.0.0:$PORT
+      python -c "from alwahis import app; from flask_migrate import upgrade; upgrade(directory='alwahis/migrations')"
+    startCommand: gunicorn -w 2 --threads=4 --timeout=60 --bind=0.0.0.0:$PORT "alwahis:app"
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0

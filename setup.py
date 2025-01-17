@@ -8,7 +8,10 @@ setup(
         'flask',
         'flask-sqlalchemy',
         'flask-cors',
+        'flask-migrate',
         'psycopg2-binary',
-        'gunicorn'
+        'gunicorn',
+        'PyJWT',
+        'python-dotenv'
     ]
 )

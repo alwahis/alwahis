@@ -29,6 +29,27 @@ CORS(app, resources={
     }
 })
 
+@app.route('/')
+def home():
+    try:
+        # Return basic API status
+        return jsonify({
+            'status': 'success',
+            'message': 'Alwahis API is running',
+            'version': '1.0'
+        })
+    except Exception as e:
+        logger.error(f"Error in home route: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({'error': 'Not found'}), 404
+
+@app.errorhandler(500)
+def internal_error(e):
+    return jsonify({'error': 'Internal server error'}), 500
+
 # Database configuration
 DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///alwahis.db')
 app.config.update(
@@ -204,15 +225,34 @@ def create_ride():
 def search_rides():
     try:
         data = request.get_json()
+        logger.info(f"Received search request with data: {data}")
+        
         departure_city = data.get('departure_city')
         destination_city = data.get('destination_city')
         date = data.get('date')
         seats_needed = data.get('seats_needed', 1)
 
         if not all([departure_city, destination_city, date]):
-            return jsonify({'error': 'Missing required fields'}), 400
+            missing_fields = []
+            if not departure_city:
+                missing_fields.append('departure_city')
+            if not destination_city:
+                missing_fields.append('destination_city')
+            if not date:
+                missing_fields.append('date')
+            error_msg = f"Missing required fields: {', '.join(missing_fields)}"
+            logger.error(error_msg)
+            return jsonify({'error': error_msg}), 400
 
-        search_date = datetime.strptime(date, '%Y-%m-%d')
+        try:
+            search_date = datetime.strptime(date, '%Y-%m-%d')
+            logger.info(f"Parsed date: {search_date}")
+        except ValueError as e:
+            error_msg = f"Invalid date format. Please use YYYY-MM-DD format. Error: {str(e)}"
+            logger.error(error_msg)
+            return jsonify({'error': error_msg}), 400
+
+        logger.info(f"Searching for rides from {departure_city} to {destination_city} on {search_date}")
         rides = db.session.query(Ride, Car, User).join(
             Car, Ride.car_id == Car.id
         ).join(
