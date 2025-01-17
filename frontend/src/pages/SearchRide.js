@@ -1,25 +1,27 @@
 import React, { useState } from 'react';
 import {
   Container,
+  Typography,
   Box,
   TextField,
   Button,
-  Typography,
+  Card,
+  CardContent,
   Grid,
-  Paper,
-  CircularProgress,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider, DateTimePicker } from '@mui/x-date-pickers';
-import { arSA } from 'date-fns/locale';
-import RideCard from '../components/RideCard';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import { ridesService } from '../services/ridesService';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { rideRequestsService } from '../services/rideRequestsService';
 
 const SearchRide = () => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
   const [searchParams, setSearchParams] = useState({
     from: '',
     to: '',
@@ -27,105 +29,167 @@ const SearchRide = () => {
   });
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
+  const [error, setError] = useState(null);
+  const [openRequestDialog, setOpenRequestDialog] = useState(false);
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [searchPerformed, setSearchPerformed] = useState(false);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
+  const handleSearch = async () => {
     setLoading(true);
+    setError(null);
     try {
       const { data, error } = await ridesService.searchRides(searchParams);
       if (error) throw error;
-      setRides(data);
-      setSearched(true);
-    } catch (error) {
-      console.error('Error searching rides:', error);
+      setRides(data || []);
+      setSearchPerformed(true);
+    } catch (err) {
+      setError('حدث خطأ أثناء البحث عن الرحلات');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRequestRide = (ride) => {
-    if (!user) {
-      navigate('/login', { state: { from: '/search' } });
-      return;
+  const handleRequestRide = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { error } = await rideRequestsService.createRideRequest({
+        ...searchParams,
+        whatsappNumber,
+      });
+      if (error) throw error;
+      setOpenRequestDialog(false);
+      setWhatsappNumber('');
+      alert('تم إنشاء طلب الرحلة بنجاح');
+    } catch (err) {
+      setError('حدث خطأ أثناء إنشاء طلب الرحلة');
+    } finally {
+      setLoading(false);
     }
-    // Navigate to request page or open modal
-    // This will be implemented later
   };
 
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ mt: 4, mb: 6 }}>
+    <Container maxWidth="md">
+      <Box sx={{ mt: 4, mb: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom align="center">
-          البحث عن رحلة
+          ابحث عن رحلة
         </Typography>
 
-        <Paper sx={{ p: 3, mb: 4 }}>
-          <Box component="form" onSubmit={handleSearch}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label="من"
-                  value={searchParams.from}
-                  onChange={(e) =>
-                    setSearchParams({ ...searchParams, from: e.target.value })
-                  }
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label="إلى"
-                  value={searchParams.to}
-                  onChange={(e) =>
-                    setSearchParams({ ...searchParams, to: e.target.value })
-                  }
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={arSA}>
-                  <DateTimePicker
-                    label="تاريخ الرحلة"
-                    value={searchParams.date}
-                    onChange={(newValue) =>
-                      setSearchParams({ ...searchParams, date: newValue })
-                    }
-                    renderInput={(params) => <TextField {...params} fullWidth />}
-                  />
-                </LocalizationProvider>
-              </Grid>
-            </Grid>
-            <Box sx={{ mt: 2, textAlign: 'center' }}>
-              <Button
-                type="submit"
-                variant="contained"
-                size="large"
-                disabled={loading}
-              >
-                {loading ? <CircularProgress size={24} /> : 'بحث'}
-              </Button>
-            </Box>
-          </Box>
-        </Paper>
-
-        {searched && (
-          <Box>
-            <Typography variant="h6" gutterBottom>
-              {rides.length > 0
-                ? `تم العثور على ${rides.length} رحلات`
-                : 'لم يتم العثور على رحلات'}
-            </Typography>
-            {rides.map((ride) => (
-              <RideCard
-                key={ride.id}
-                ride={ride}
-                onRequest={handleRequestRide}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="من"
+              value={searchParams.from}
+              onChange={(e) => setSearchParams({ ...searchParams, from: e.target.value })}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="إلى"
+              value={searchParams.to}
+              onChange={(e) => setSearchParams({ ...searchParams, to: e.target.value })}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <DatePicker
+                label="التاريخ"
+                value={searchParams.date}
+                onChange={(date) => setSearchParams({ ...searchParams, date })}
+                renderInput={(params) => <TextField {...params} fullWidth />}
               />
-            ))}
+            </LocalizationProvider>
+          </Grid>
+          <Grid item xs={12}>
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={handleSearch}
+              disabled={loading}
+            >
+              بحث
+            </Button>
+          </Grid>
+        </Grid>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
+        {searchPerformed && rides.length === 0 && (
+          <Box sx={{ textAlign: 'center', mt: 4 }}>
+            <Typography variant="h6" gutterBottom>
+              لم نجد رحلات متطابقة مع بحثك
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => setOpenRequestDialog(true)}
+              sx={{ mt: 2 }}
+            >
+              اقترح رحلة جديدة
+            </Button>
           </Box>
         )}
+
+        {rides.map((ride) => (
+          <Card key={ride.id} sx={{ mb: 2 }}>
+            <CardContent>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={8}>
+                  <Typography variant="h6">
+                    {ride.from_location} → {ride.to_location}
+                  </Typography>
+                  <Typography color="textSecondary">
+                    {new Date(ride.departure_time).toLocaleDateString('ar-IQ')}
+                  </Typography>
+                  <Typography>
+                    السعر: {ride.price_per_seat} دينار
+                  </Typography>
+                  <Typography>
+                    المقاعد المتاحة: {ride.available_seats}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={4} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    startIcon={<WhatsAppIcon />}
+                    href={`https://wa.me/${ride.whatsapp_number}`}
+                    target="_blank"
+                  >
+                    تواصل عبر واتساب
+                  </Button>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        ))}
       </Box>
+
+      <Dialog open={openRequestDialog} onClose={() => setOpenRequestDialog(false)}>
+        <DialogTitle>اقترح رحلة جديدة</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="رقم الواتساب"
+            value={whatsappNumber}
+            onChange={(e) => setWhatsappNumber(e.target.value)}
+            placeholder="مثال: 9647801234567"
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenRequestDialog(false)}>إلغاء</Button>
+          <Button onClick={handleRequestRide} variant="contained" disabled={loading}>
+            إرسال
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
