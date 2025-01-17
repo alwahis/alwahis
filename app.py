@@ -5,7 +5,10 @@ from datetime import datetime, timedelta
 import os
 import logging
 import sys
-from sqlalchemy import text
+from sqlalchemy import text, and_
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_caching import Cache
 import jwt
 from functools import wraps
 import re
@@ -17,6 +20,30 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 logger = logging.getLogger(__name__)
+
+app = Flask(__name__)
+
+# CORS configuration
+CORS(app, resources={
+    r"/*": {
+        "origins": ["https://alwahis.netlify.app", "http://localhost:5000", "http://localhost:5001"],
+        "methods": ["GET", "POST", "PUT", "DELETE"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
+
+# Rate limiter configuration
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
+
+# Cache configuration
+cache = Cache(app, config={
+    'CACHE_TYPE': 'simple',
+    'CACHE_DEFAULT_TIMEOUT': 300
+})
 
 app = Flask(__name__)
 
@@ -222,24 +249,36 @@ def create_ride():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/rides/search', methods=['POST'])
+@limiter.limit("30 per minute")
 def search_rides():
     try:
         data = request.get_json()
         logger.info(f"Received search request with data: {data}")
         
+        # Extract search parameters
         departure_city = data.get('departure_city')
         destination_city = data.get('destination_city')
         date = data.get('date')
-        seats_needed = data.get('seats_needed', 1)
+        min_price = data.get('min_price')
+        max_price = data.get('max_price')
+        departure_time_start = data.get('departure_time_start')
+        departure_time_end = data.get('departure_time_end')
+        min_available_seats = data.get('min_available_seats', 1)
+        sort_by = data.get('sort_by', 'departure_time')  # Default sort by departure time
+        sort_order = data.get('sort_order', 'asc')  # Default ascending order
+        page = data.get('page', 1)
+        per_page = data.get('per_page', 10)
 
-        if not all([departure_city, destination_city, date]):
-            missing_fields = []
-            if not departure_city:
-                missing_fields.append('departure_city')
-            if not destination_city:
-                missing_fields.append('destination_city')
-            if not date:
-                missing_fields.append('date')
+        # Validate required fields
+        missing_fields = []
+        if not departure_city:
+            missing_fields.append('departure_city')
+        if not destination_city:
+            missing_fields.append('destination_city')
+        if not date:
+            missing_fields.append('date')
+        
+        if missing_fields:
             error_msg = f"Missing required fields: {', '.join(missing_fields)}"
             logger.error(error_msg)
             return jsonify({'error': error_msg}), 400
@@ -252,22 +291,53 @@ def search_rides():
             logger.error(error_msg)
             return jsonify({'error': error_msg}), 400
 
-        logger.info(f"Searching for rides from {departure_city} to {destination_city} on {search_date}")
-        rides = db.session.query(Ride, Car, User).join(
+        # Build base query
+        query = db.session.query(Ride, Car, User).join(
             Car, Ride.car_id == Car.id
         ).join(
             User, Ride.driver_id == User.id
         ).filter(
+            Ride.status == 'active',
             Ride.departure_city == departure_city,
             Ride.destination_city == destination_city,
             Ride.departure_time >= search_date,
             Ride.departure_time < search_date + timedelta(days=1),
-            Ride.available_seats >= seats_needed,
-            Ride.status == 'active'
-        ).all()
+            Ride.available_seats >= min_available_seats
+        )
 
-        return jsonify({
-            'rides': [{
+        # Add optional filters
+        if min_price is not None:
+            query = query.filter(Ride.price_per_seat >= min_price)
+        if max_price is not None:
+            query = query.filter(Ride.price_per_seat <= max_price)
+        if departure_time_start:
+            try:
+                start_time = datetime.strptime(departure_time_start, '%H:%M')
+                query = query.filter(Ride.departure_time >= datetime.combine(search_date.date(), start_time.time()))
+            except ValueError:
+                return jsonify({'error': 'Invalid departure_time_start format. Use HH:MM'}), 400
+        if departure_time_end:
+            try:
+                end_time = datetime.strptime(departure_time_end, '%H:%M')
+                query = query.filter(Ride.departure_time <= datetime.combine(search_date.date(), end_time.time()))
+            except ValueError:
+                return jsonify({'error': 'Invalid departure_time_end format. Use HH:MM'}), 400
+
+        # Apply sorting
+        if sort_by == 'price':
+            query = query.order_by(Ride.price_per_seat.asc() if sort_order == 'asc' else Ride.price_per_seat.desc())
+        elif sort_by == 'available_seats':
+            query = query.order_by(Ride.available_seats.asc() if sort_order == 'asc' else Ride.available_seats.desc())
+        else:  # default to departure_time
+            query = query.order_by(Ride.departure_time.asc() if sort_order == 'asc' else Ride.departure_time.desc())
+
+        # Apply pagination
+        total_rides = query.count()
+        rides = query.offset((page - 1) * per_page).limit(per_page).all()
+
+        rides_data = []
+        for ride, car, driver in rides:
+            rides_data.append({
                 'id': ride.id,
                 'departure_city': ride.departure_city,
                 'destination_city': ride.destination_city,
@@ -275,8 +345,33 @@ def search_rides():
                 'available_seats': ride.available_seats,
                 'price_per_seat': ride.price_per_seat,
                 'car_type': car.car_type,
-                'driver_phone': driver.phone
-            } for ride, car, driver in rides]
+                'driver_phone': driver.phone,
+                'car_details': car.car_details,
+                'car_photo': car.photo_url
+            })
+
+        return jsonify({
+            'rides': rides_data,
+            'pagination': {
+                'current_page': page,
+                'per_page': per_page,
+                'total_items': total_rides,
+                'total_pages': (total_rides + per_page - 1) // per_page
+            },
+            'filters': {
+                'departure_city': departure_city,
+                'destination_city': destination_city,
+                'date': date,
+                'min_price': min_price,
+                'max_price': max_price,
+                'departure_time_start': departure_time_start,
+                'departure_time_end': departure_time_end,
+                'min_available_seats': min_available_seats
+            },
+            'sorting': {
+                'sort_by': sort_by,
+                'sort_order': sort_order
+            }
         }), 200
 
     except Exception as e:
