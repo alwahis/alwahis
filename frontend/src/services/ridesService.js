@@ -99,37 +99,29 @@ export const ridesService = {
         departure_time_start,
         departure_time_end,
         min_available_seats,
-        sort_by,
-        sort_order,
-        page,
-        per_page
+        sort_by = 'departure_time',
+        sort_order = 'asc',
+        page = 1,
+        per_page = 10
       } = searchParams;
 
-      const response = await fetch('http://localhost:5003/api/rides/search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          departure_city,
-          destination_city,
-          date,
-          min_price,
-          max_price,
-          departure_time_start,
-          departure_time_end,
-          min_available_seats,
-          sort_by,
-          sort_order,
-          page: page || 1,
-          per_page: per_page || 10
-        }),
+      const { data, error } = await supabase.rpc('search_rides', {
+        p_departure_city: departure_city,
+        p_destination_city: destination_city,
+        p_date: date,
+        p_min_price: min_price || null,
+        p_max_price: max_price || null,
+        p_departure_time_start: departure_time_start || null,
+        p_departure_time_end: departure_time_end || null,
+        p_min_available_seats: min_available_seats || null,
+        p_sort_by: sort_by,
+        p_sort_order: sort_order,
+        p_page: page,
+        p_per_page: per_page
       });
 
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to search rides');
+      if (error) {
+        throw error;
       }
 
       return { data, error: null };
