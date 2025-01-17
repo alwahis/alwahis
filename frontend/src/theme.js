@@ -5,15 +5,15 @@ const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#FF8C00', // Royal Orange
-      light: '#FFA333',
-      dark: '#CC7000',
+      main: '#2E7D32', // Forest Green
+      light: '#4CAF50', // Green
+      dark: '#1B5E20', // Dark Green
       contrastText: '#ffffff',
     },
     secondary: {
-      main: '#FFA333',
-      light: '#FFB966',
-      dark: '#CC8229',
+      main: '#66BB6A', // Light Green
+      light: '#81C784',
+      dark: '#388E3C',
       contrastText: '#ffffff',
     },
     background: {
@@ -71,7 +71,7 @@ const theme = createTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: '#FF8C00',
+          backgroundColor: '#2E7D32',
         },
       },
     },
