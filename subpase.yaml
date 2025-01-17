@@ -4,9 +4,10 @@ services:
     env: python
     buildCommand: |
       pip install -r requirements.txt
+      pip install gunicorn
     startCommand: |
-      cd /opt/subpase/project/src && python3 -c "from app import db; db.create_all()"
-      cd /opt/subpase/project/src && gunicorn app:app --log-level debug --workers=2 --threads=4 --timeout=60
+      python3 -c "from app import db; db.create_all()"
+      gunicorn app:app --log-level debug --workers=2 --threads=4 --timeout=60 --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
@@ -16,5 +17,5 @@ services:
         generateValue: true
       - key: FLASK_ENV
         value: production
-      - key: PYTHONPATH
-        value: /opt/subpase/project/src
+      - key: PORT
+        value: "5003"
