@@ -1,59 +1,67 @@
 import React from 'react';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { CssBaseline, Box } from '@mui/material';
-import rtlPlugin from 'stylis-plugin-rtl';
-import { CacheProvider } from '@emotion/react';
-import createCache from '@emotion/cache';
-import { prefixer } from 'stylis';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider, CssBaseline } from '@mui/material';
+import theme from './theme';
 
-// Components (to be created)
-import Navbar from './components/Navbar';
+// Import your components here
+import Navigation from './components/Navigation';
 import Home from './pages/Home';
-import RiderDashboard from './pages/RiderDashboard';
-import DriverDashboard from './pages/DriverDashboard';
+import PublishedRides from './pages/PublishedRides';
+import MyRides from './pages/MyRides';
+import SearchRide from './pages/SearchRide';
+import Profile from './pages/Profile';
+import Login from './pages/Login';
+import Register from './pages/Register';
 
-// Create RTL cache
-const cacheRtl = createCache({
-  key: 'muirtl',
-  stylisPlugins: [prefixer, rtlPlugin],
-});
-
-const theme = createTheme({
-  direction: 'rtl',
-  palette: {
-    primary: {
-      main: '#FF8C00', // Dark orange
-      light: '#FFA533',
-      dark: '#CC7000',
-    },
-    background: {
-      default: '#f5f5f5',
-      paper: '#ffffff',
-    },
-  },
-  typography: {
-    fontFamily: 'Cairo, sans-serif',
-  },
-});
+// Protected Route component
+const ProtectedRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+  
+  return children;
+};
 
 function App() {
   return (
-    <CacheProvider value={cacheRtl}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AuthProvider>
         <Router>
-          <Box dir="rtl">
-            <Navbar />
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/rider" element={<RiderDashboard />} />
-              <Route path="/driver" element={<DriverDashboard />} />
-            </Routes>
-          </Box>
+          <Navigation />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/published-rides" element={<PublishedRides />} />
+            <Route path="/search" element={<SearchRide />} />
+            <Route 
+              path="/my-rides" 
+              element={
+                <ProtectedRoute>
+                  <MyRides />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
+          </Routes>
         </Router>
-      </ThemeProvider>
-    </CacheProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

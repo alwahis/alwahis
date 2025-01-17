@@ -759,9 +759,21 @@
           gap: 0.5rem;
         }
       }
+      
+      .date-time-inputs {
+        display: flex;
+        gap: 1rem;
+      }
+
+      .date-time-inputs input {
+        flex: 1;
+      }
     </style>
   </head>
   <body>
+    <script>
+      const API_BASE_URL = 'http://localhost:5003';
+    </script>
     <nav class="navbar">
       <div class="navbar-content">
         <div class="logo">عالواهس</div>
@@ -788,17 +800,23 @@
             <input type="text" id="toLocation" class="form-control" placeholder="مثال: البصرة - العشار" required>
           </div>
           
-          <div class="form-row">
-            <div class="form-group">
-              <label>تاريخ المغادرة</label>
-              <input type="date" id="departureDate" class="form-control" required min="">
-              <small class="form-text">اختر تاريخ الرحلة</small>
-            </div>
-            
-            <div class="form-group">
-              <label>وقت المغادرة</label>
-              <input type="time" id="departureTime" class="form-control" required>
-              <small class="form-text">اختر وقت المغادرة المتوقع</small>
+          <div class="form-group">
+            <label for="departureDate">موعد الانطلاق</label>
+            <div class="date-time-inputs">
+              <input
+                type="date"
+                id="departureDate"
+                name="departureDate"
+                required
+                class="form-control"
+              />
+              <input
+                type="time"
+                id="departureTime"
+                name="departureTime"
+                required
+                class="form-control"
+              />
             </div>
           </div>
           
@@ -893,30 +911,101 @@
     </footer>
 
     <script>
-      const API_BASE_URL = 'https://alwahis-backend.onrender.com';
+      const API_BASE_URL = 'http://localhost:5003';
 
+      // Utility functions
+      function validatePhone(phone) {
+        const pattern = /^07[3-9]\d{8}$/;
+        return pattern.test(phone);
+      }
+
+      function validateDate(dateStr, timeStr) {
+        const dateTime = new Date(`${dateStr}T${timeStr}`);
+        const now = new Date();
+        return dateTime > now;
+      }
+
+      function validateForm(formData) {
+        const errors = [];
+        
+        // Phone validation
+        if (!validatePhone(formData.driver_phone)) {
+          errors.push('رقم الهاتف غير صحيح. يجب أن يبدأ بـ 07 ويتكون من 11 رقم');
+        }
+        
+        // Date validation
+        if (!validateDate(formData.departure_date, formData.departure_time)) {
+          errors.push('لا يمكن إنشاء رحلة في تاريخ سابق');
+        }
+        
+        // Seats validation
+        const seats = parseInt(formData.total_seats);
+        if (isNaN(seats) || seats < 1 || seats > 7) {
+          errors.push('عدد المقاعد يجب أن يكون بين 1 و 7');
+        }
+        
+        // Price validation
+        const price = parseInt(formData.price_per_seat);
+        if (isNaN(price) || price < 1000) {
+          errors.push('السعر يجب أن يكون 1000 دينار على الأقل');
+        }
+        
+        // Required fields
+        if (!formData.driver_name.trim()) {
+          errors.push('يرجى إدخال اسم السائق');
+        }
+        if (!formData.car_type.trim()) {
+          errors.push('يرجى إدخال نوع السيارة');
+        }
+        if (!formData.departure_city.trim()) {
+          errors.push('يرجى إدخال مدينة الانطلاق');
+        }
+        if (!formData.destination_city.trim()) {
+          errors.push('يرجى إدخال مدينة الوصول');
+        }
+        
+        return errors;
+      }
+
+      // Form submission handler
       async function publishRide(event) {
         event.preventDefault();
         const form = event.target;
         
-        const rideData = {
+        // Get form data
+        const formData = {
+          driver_name: form.querySelector('#driverName').value,
+          driver_phone: form.querySelector('#phoneNumber').value,
+          car_type: form.querySelector('#carType').value,
+          car_details: form.querySelector('#carDetails').value || '',
           departure_city: form.querySelector('#fromLocation').value,
           destination_city: form.querySelector('#toLocation').value,
-          departure_time: form.querySelector('#departureDate').value,
+          departure_date: form.querySelector('#departureDate').value,
+          departure_time: form.querySelector('#departureTime').value,
           total_seats: parseInt(form.querySelector('#availableSeats').value),
-          available_seats: parseInt(form.querySelector('#availableSeats').value),
-          price_per_seat: parseInt(form.querySelector('#pricePerSeat').value),
-          car_type: form.querySelector('#carType').value,
-          driver_phone: form.querySelector('#phoneNumber').value,
-          driver_name: form.querySelector('#driverName').value,
-          car_details: form.querySelector('#carDetails').value || ''
+          price_per_seat: parseInt(form.querySelector('#pricePerSeat').value)
         };
-
-        console.log('Publishing ride with data:', rideData);
-        console.log('API URL:', `${API_BASE_URL}/api/rides`);
-
+        
+        // Client-side validation
+        const validationErrors = validateForm(formData);
+        if (validationErrors.length > 0) {
+          showError(validationErrors.join('\n'));
+          return;
+        }
+        
+        // Prepare data for API
+        const rideData = {
+          ...formData,
+          departure_time: `${formData.departure_date}T${formData.departure_time}`,
+          available_seats: formData.total_seats
+        };
+        
         try {
-          const response = await fetch(`${API_BASE_URL}/api/rides`, {
+          const submitButton = form.querySelector('button[type="submit"]');
+          submitButton.disabled = true;
+          submitButton.textContent = 'جاري النشر...';
+
+          const response = await fetch(`${API_BASE_URL}/api/drivers/rides`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -925,214 +1014,149 @@
             body: JSON.stringify(rideData)
           });
 
-          console.log('Response status:', response.status);
-          console.log('Response headers:', Object.fromEntries([...response.headers]));
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Error response:', errorText);
-            throw new Error(`Network response was not ok: ${response.status} ${errorText}`);
-          }
-
           const data = await response.json();
-          console.log('Response data:', data);
           
-          console.log('Fetching matching requests...');
-          // Get matching requests
-          const matchingResponse = await fetch(`${API_BASE_URL}/api/drivers/matching-requests`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-              departure_city: rideData.departure_city,
-              destination_city: rideData.destination_city,
-              departure_time: rideData.departure_time
-            })
-          });
-
-          console.log('Matching response status:', matchingResponse.status);
-          console.log('Matching response headers:', Object.fromEntries([...matchingResponse.headers]));
-
-          if (!matchingResponse.ok) {
-            const errorText = await matchingResponse.text();
-            console.error('Matching error response:', errorText);
-            throw new Error(`Network response was not ok: ${matchingResponse.status} ${errorText}`);
+          if (response.ok) {
+            const matchingResponse = await fetch(`${API_BASE_URL}/api/rides/matching-requests`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify({
+                departure_city: rideData.departure_city,
+                destination_city: rideData.destination_city,
+                departure_time: rideData.departure_time
+              })
+            });
+            
+            const matchingData = await matchingResponse.json();
+            showSuccessModal(matchingData.matching_requests);
+            form.reset();
+            
+            // Set default date and time
+            const now = new Date();
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            form.querySelector('#departureDate').value = tomorrow.toISOString().split('T')[0];
+            form.querySelector('#departureTime').value = '10:00';
+          } else {
+            if (data.errors) {
+              showError(Array.isArray(data.errors) ? data.errors.join('\n') : data.errors);
+            } else {
+              showError(data.error || 'حدث خطأ في نشر الرحلة');
+            }
           }
-
-          const matchingData = await matchingResponse.json();
-          console.log('Matching response data:', matchingData);
-          
-          // Show success modal
-          showSuccessModal(matchingData.matching_requests || []);
-          
-          // Reset form
-          form.reset();
         } catch (error) {
-          showError('حدث خطأ في نشر الرحلة');
           console.error('Error:', error);
+          showError('حدث خطأ في الاتصال بالخادم');
+        } finally {
+          const submitButton = form.querySelector('button[type="submit"]');
+          submitButton.disabled = false;
+          submitButton.textContent = 'نشر الرحلة';
         }
+      }
+
+      function showError(message) {
+        const errorModal = document.getElementById('errorModal');
+        const errorMessage = document.getElementById('errorMessage');
+        errorMessage.textContent = message;
+        errorModal.style.display = 'block';
       }
 
       function showSuccessModal(matchingRequests) {
         const modal = document.getElementById('successModal');
-        const modalContent = document.querySelector('.modal-content');
+        const requestsContainer = document.getElementById('matchingRequestsContainer');
         
-        let requestsHtml = '';
         if (matchingRequests && matchingRequests.length > 0) {
-          requestsHtml = `
-            <div class="matching-requests">
-              <h3>طلبات رحلات مطابقة</h3>
-              <div class="requests-list">
-                ${matchingRequests.map(request => `
-                  <div class="request-card">
-                    <div class="request-details">
-                      <div class="route-info">
-                        <span>${request.departure_city}</span>
-                        <i class="fas fa-arrow-left"></i>
-                        <span>${request.destination_city}</span>
-                      </div>
-                      <div class="seats-info">
-                        <i class="fas fa-users"></i>
-                        <span>${request.seats_needed} مقاعد</span>
-                      </div>
-                      ${request.preferred_car_type ? `
-                        <div class="car-type">
-                          <i class="fas fa-car"></i>
-                          <span>${request.preferred_car_type === 'suv' ? 'دفع رباعي' : 'صالون'}</span>
-                        </div>
-                      ` : ''}
-                    </div>
-                    <button onclick="contactRider('${request.rider_phone}', '${request.departure_city}', '${request.destination_city}', '${request.desired_date}')" class="contact-btn">
-                      <i class="fab fa-whatsapp"></i>
-                      تواصل مع الراكب
-                    </button>
-                  </div>
-                `).join('')}
+          const requestsList = document.getElementById('matchingRequestsList');
+          requestsList.innerHTML = '';
+          
+          matchingRequests.forEach(request => {
+            const requestItem = document.createElement('div');
+            requestItem.className = 'request-item';
+            requestItem.innerHTML = `
+              <div class="request-details">
+                <p><strong>من:</strong> ${request.departure_city}</p>
+                <p><strong>إلى:</strong> ${request.destination_city}</p>
+                <p><strong>التاريخ:</strong> ${new Date(request.desired_date).toLocaleDateString('ar-IQ')}</p>
+                <p><strong>عدد المقاعد:</strong> ${request.seats_needed}</p>
+                ${request.preferred_car_type ? `<p><strong>نوع السيارة المفضل:</strong> ${request.preferred_car_type}</p>` : ''}
+                <p><strong>حجز سيارة كاملة:</strong> ${request.full_car_booking ? 'نعم' : 'لا'}</p>
               </div>
-            </div>
-          `;
+              <button class="contact-btn" onclick="contactRider('${request.rider_phone}', '${request.departure_city}', '${request.destination_city}', '${request.desired_date}')">
+                اتصل بالراكب
+              </button>
+            `;
+            requestsList.appendChild(requestItem);
+          });
+          
+          requestsContainer.style.display = 'block';
+        } else {
+          requestsContainer.style.display = 'none';
         }
-
-        modalContent.innerHTML = `
-          <h2>تم نشر رحلتك بنجاح!</h2>
-          <p>سيتم إشعارك عند حجز مقاعد في رحلتك</p>
-          ${requestsHtml}
-          <div class="modal-actions">
-            <button onclick="closeModal()" class="close-btn">إغلاق</button>
-            <a href="my-rides.html" class="view-rides-btn">عرض رحلاتي</a>
-          </div>
-        `;
         
-        modal.style.display = 'flex';
-      }
-
-      function showError(message) {
-        alert(message);
-      }
-
-      // Set minimum date to today
-      document.addEventListener('DOMContentLoaded', function() {
-        const today = new Date();
-        const dd = String(today.getDate()).padStart(2, '0');
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const yyyy = today.getFullYear();
-        
-        const minDate = yyyy + '-' + mm + '-' + dd;
-        document.getElementById('departureDate').min = minDate;
-        
-        // Set default time to next hour
-        const nextHour = new Date(today.setHours(today.getHours() + 1, 0, 0));
-        const hours = String(nextHour.getHours()).padStart(2, '0');
-        const minutes = String(nextHour.getMinutes()).padStart(2, '0');
-        document.getElementById('departureTime').value = `${hours}:${minutes}`;
-      });
-
-      function contactRider(phone, from, to, date) {
-        const message = encodeURIComponent(`السلام عليكم، لدي رحلة من ${from} إلى ${to} بتاريخ ${date}`);
-        const formattedPhone = formatPhone(phone);
-        window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
-      }
-
-      function formatPhone(phone) {
-        if (phone.startsWith('07')) {
-          return '964' + phone.substring(1);
-        }
-        return phone;
+        modal.style.display = 'block';
       }
 
       function closeModal() {
-        document.getElementById('successModal').style.display = 'none';
-        document.getElementById('publishForm').reset();
+        const successModal = document.getElementById('successModal');
+        const errorModal = document.getElementById('errorModal');
+        successModal.style.display = 'none';
+        errorModal.style.display = 'none';
+      }
+
+      function contactRider(phone, from, to, date) {
+        const formattedPhone = phone.startsWith('07') ? '964' + phone.substring(1) : phone;
+        const message = `السلام عليكم، أنا سائق وعندي رحلة من ${from} إلى ${to} بتاريخ ${new Date(date).toLocaleDateString('ar-IQ')}`;
+        window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`);
       }
 
       // Close modal when clicking outside
       window.onclick = function(event) {
-        const modal = document.getElementById('successModal');
-        if (event.target === modal) {
+        const successModal = document.getElementById('successModal');
+        const errorModal = document.getElementById('errorModal');
+        if (event.target == successModal || event.target == errorModal) {
           closeModal();
         }
       };
 
-      function previewImage(event) {
-        const file = event.target.files[0];
-        if (file) {
-          // Validate file type
-          if (!file.type.startsWith('image/')) {
-            alert('يرجى اختيار ملف صورة فقط');
-            event.target.value = '';
-            return;
-          }
-
-          // Validate file size (max 5MB)
-          if (file.size > 5 * 1024 * 1024) {
-            alert('حجم الصورة يجب أن لا يتجاوز 5 ميغابايت');
-            event.target.value = '';
-            return;
-          }
-
-          const reader = new FileReader();
-          reader.onload = function() {
-            const preview = document.getElementById('preview');
-            preview.src = reader.result;
-            preview.style.display = 'block';
-            document.querySelector('.upload-placeholder').style.display = 'none';
-          }
-          reader.readAsDataURL(file);
-        }
-      }
-
-      // Click on preview to trigger file input
+      // Initialize form with default date and time
       document.addEventListener('DOMContentLoaded', function() {
-        const imagePreview = document.getElementById('imagePreview');
-        const fileInput = document.getElementById('carImage');
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
         
-        imagePreview.addEventListener('click', function() {
-          fileInput.click();
-        });
-      });
-
-      // Add input validation for phone number
-      document.getElementById('phoneNumber').addEventListener('input', function(e) {
-        const input = e.target;
-        let value = input.value.replace(/\D/g, ''); // Remove non-digits
+        document.getElementById('departureDate').value = tomorrow.toISOString().split('T')[0];
+        document.getElementById('departureTime').value = '10:00';
         
-        if (value.length > 11) {
-          value = value.slice(0, 11);
-        }
-        
-        // Format as user types
-        if (value.length >= 3) {
-          const prefix = value.slice(0, 3);
-          if (!['078', '077', '075'].includes(prefix)) {
-            input.setCustomValidity('يجب أن يبدأ الرقم بـ 078 أو 077 أو 075');
+        // Add input event listeners for real-time validation
+        document.getElementById('phoneNumber').addEventListener('input', function(e) {
+          const phone = e.target.value;
+          if (phone && !validatePhone(phone)) {
+            e.target.setCustomValidity('رقم الهاتف غير صحيح. يجب أن يبدأ بـ 07 ويتكون من 11 رقم');
           } else {
-            input.setCustomValidity('');
+            e.target.setCustomValidity('');
           }
-        }
+        });
         
-        input.value = value;
+        document.getElementById('pricePerSeat').addEventListener('input', function(e) {
+          const price = parseInt(e.target.value);
+          if (isNaN(price) || price < 1000) {
+            e.target.setCustomValidity('السعر يجب أن يكون 1000 دينار على الأقل');
+          } else {
+            e.target.setCustomValidity('');
+          }
+        });
+        
+        document.getElementById('availableSeats').addEventListener('input', function(e) {
+          const seats = parseInt(e.target.value);
+          if (isNaN(seats) || seats < 1 || seats > 7) {
+            e.target.setCustomValidity('عدد المقاعد يجب أن يكون بين 1 و 7');
+          } else {
+            e.target.setCustomValidity('');
+          }
+        });
       });
     </script>
   </body>

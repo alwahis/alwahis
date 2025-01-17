@@ -1,11 +1,13 @@
 import React from 'react';
 import { Container, Typography, Box, Button, Grid, Paper } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import LocalTaxiIcon from '@mui/icons-material/LocalTaxi';
-import PersonIcon from '@mui/icons-material/Person';
+import { useAuth } from '../context/AuthContext';
+import SearchIcon from '@mui/icons-material/Search';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 
 const Home = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <Container maxWidth="lg">
@@ -14,50 +16,72 @@ const Home = () => {
           مرحباً بك في الوحيس
         </Typography>
         <Typography variant="h5" color="text.secondary" paragraph>
-          خدمة التوصيل الأولى في العراق
+          منصة مشاركة الرحلات الأولى في العراق
         </Typography>
 
         <Grid container spacing={4} sx={{ mt: 4 }}>
           <Grid item xs={12} md={6}>
             <Paper elevation={3} sx={{ p: 4, height: '100%' }}>
-              <PersonIcon sx={{ fontSize: 60, color: '#FF8C00', mb: 2 }} />
+              <SearchIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
               <Typography variant="h5" gutterBottom>
-                هل تريد رحلة؟
+                ابحث عن رحلة
               </Typography>
               <Typography paragraph>
-                احجز رحلتك الآن بكل سهولة وأمان
+                ابحث عن رحلات متاحة واحجز مقعدك بكل سهولة وأمان
               </Typography>
               <Button 
                 variant="contained" 
                 size="large"
-                onClick={() => navigate('/rider')}
-                sx={{ bgcolor: '#FF8C00', '&:hover': { bgcolor: '#CC7000' } }}
+                onClick={() => navigate('/search')}
               >
-                احجز رحلة
+                ابحث الآن
               </Button>
             </Paper>
           </Grid>
 
           <Grid item xs={12} md={6}>
             <Paper elevation={3} sx={{ p: 4, height: '100%' }}>
-              <LocalTaxiIcon sx={{ fontSize: 60, color: '#FF8C00', mb: 2 }} />
+              <DirectionsCarIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
               <Typography variant="h5" gutterBottom>
-                هل تريد أن تكون سائقاً؟
+                انشر رحلتك
               </Typography>
               <Typography paragraph>
-                انضم إلى فريقنا وابدأ في كسب المال
+                شارك رحلتك مع الآخرين وساعد في تقليل التكاليف
               </Typography>
               <Button 
                 variant="contained" 
                 size="large"
-                onClick={() => navigate('/driver')}
-                sx={{ bgcolor: '#FF8C00', '&:hover': { bgcolor: '#CC7000' } }}
+                onClick={() => user ? navigate('/my-rides') : navigate('/login')}
               >
-                سجل كسائق
+                {user ? 'انشر رحلة' : 'سجل دخول لنشر رحلة'}
               </Button>
             </Paper>
           </Grid>
         </Grid>
+
+        {!user && (
+          <Box sx={{ mt: 6 }}>
+            <Typography variant="h5" gutterBottom>
+              هل لديك حساب؟
+            </Typography>
+            <Button 
+              variant="outlined" 
+              size="large"
+              onClick={() => navigate('/login')}
+              sx={{ mx: 1 }}
+            >
+              تسجيل الدخول
+            </Button>
+            <Button 
+              variant="contained" 
+              size="large"
+              onClick={() => navigate('/register')}
+              sx={{ mx: 1 }}
+            >
+              إنشاء حساب جديد
+            </Button>
+          </Box>
+        )}
       </Box>
     </Container>
   );

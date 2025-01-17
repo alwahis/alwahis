@@ -401,25 +401,10 @@
     </style>
   </head>
   <body>
-    <nav class="navbar">
-      <div class="navbar-content">
-        <a href="index.html" class="logo">عالواهس</a>
-      </div>
-    </nav>
-
-    <main class="main-content">
-      <a href="search-ride.html" class="back-btn">
-        <i class="fas fa-arrow-right"></i>
-        عودة إلى البحث
-      </a>
-
-      <div id="searchResults">
-        <!-- Results will be dynamically added here -->
-      </div>
-    </main>
-
     <script>
-      const API_BASE_URL = 'https://alwahis-backend.onrender.com';
+      const API_BASE_URL = 'http://localhost:5003';
+      let currentRide = null;
+      let currentRideId = null;
 
       async function loadSearchResults() {
         const params = new URLSearchParams(window.location.search);
