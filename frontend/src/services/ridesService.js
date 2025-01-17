@@ -4,24 +4,31 @@ export const ridesService = {
   // Create a new ride
   async createRide(rideData) {
     try {
+      if (!rideData.whatsappNumber) {
+        return { error: 'WhatsApp number is required' };
+      }
+
       const { data, error } = await supabase
         .from('rides')
         .insert([
           {
             from_location: rideData.from,
             to_location: rideData.to,
-            departure_time: rideData.date,
-            available_seats: rideData.seats,
-            price_per_seat: rideData.price,
+            departure_time: rideData.date?.toISOString(),
+            available_seats: parseInt(rideData.seats) || 1,
+            price_per_seat: parseInt(rideData.price) || 0,
             whatsapp_number: rideData.whatsappNumber,
             status: 'published',
           },
         ])
         .select();
 
+      if (error) {
+        console.error('Error creating ride:', error);
+      }
       return { data, error };
     } catch (error) {
-      console.error('Error creating ride:', error);
+      console.error('Exception creating ride:', error);
       return { error };
     }
   },
@@ -77,11 +84,27 @@ export const ridesService = {
   async searchRides(searchParams) {
     try {
       console.log('Starting search with params:', searchParams);
+      
+      // Validate search params
+      if (!searchParams) {
+        console.error('Search params are undefined');
+        return { error: 'Invalid search parameters' };
+      }
+
       let query = supabase
         .from('rides')
-        .select('*')
-        .eq('status', 'published');
+        .select('*');
       
+      // Add status filter only if we have published rides
+      const { data: statusCheck } = await supabase
+        .from('rides')
+        .select('status')
+        .limit(1);
+      
+      if (statusCheck && statusCheck.length > 0) {
+        query = query.eq('status', 'published');
+      }
+
       if (searchParams.from) {
         query = query.ilike('from_location', `%${searchParams.from}%`);
       }
@@ -89,23 +112,36 @@ export const ridesService = {
         query = query.ilike('to_location', `%${searchParams.to}%`);
       }
       if (searchParams.date) {
-        const searchDate = new Date(searchParams.date);
-        console.log('Search date:', searchDate);
-        searchDate.setHours(0, 0, 0, 0);
-        const nextDay = new Date(searchDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-        
-        query = query
-          .gte('departure_time', searchDate.toISOString())
-          .lt('departure_time', nextDay.toISOString());
+        try {
+          const searchDate = new Date(searchParams.date);
+          console.log('Search date:', searchDate);
+          
+          if (!isNaN(searchDate.getTime())) {
+            searchDate.setHours(0, 0, 0, 0);
+            const nextDay = new Date(searchDate);
+            nextDay.setDate(nextDay.getDate() + 1);
+            
+            query = query
+              .gte('departure_time', searchDate.toISOString())
+              .lt('departure_time', nextDay.toISOString());
+          }
+        } catch (dateError) {
+          console.error('Error processing date:', dateError);
+        }
       }
       
       const { data, error } = await query.order('departure_time', { ascending: true });
-      console.log('Search result:', { data, error });
-      return { data, error };
+      
+      if (error) {
+        console.error('Supabase search error:', error);
+        return { error };
+      }
+
+      console.log('Search results:', data);
+      return { data: data || [], error: null };
     } catch (error) {
-      console.error('Error in searchRides:', error);
-      return { error };
+      console.error('Exception in searchRides:', error);
+      return { error: 'An unexpected error occurred' };
     }
   },
 

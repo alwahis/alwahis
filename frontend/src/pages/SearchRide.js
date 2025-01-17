@@ -38,10 +38,22 @@ const SearchRide = () => {
     setLoading(true);
     setError(null);
     try {
+      // Validate input
+      if (!searchParams.from || !searchParams.to) {
+        setError('الرجاء إدخال مكان الانطلاق والوجهة');
+        return;
+      }
+
       console.log('Search params:', searchParams);
       const { data, error } = await ridesService.searchRides(searchParams);
       console.log('Search result:', { data, error });
-      if (error) throw error;
+      
+      if (error) {
+        console.error('Search error:', error);
+        setError(typeof error === 'string' ? error : 'حدث خطأ أثناء البحث عن الرحلات');
+        return;
+      }
+
       setRides(data || []);
       setSearchPerformed(true);
     } catch (err) {
