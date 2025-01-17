@@ -5,8 +5,8 @@ services:
     buildCommand: |
       pip install -r requirements.txt
     startCommand: |
-      cd /opt/render/project/src && python3 -c "from app import db; db.create_all()"
-      cd /opt/render/project/src && gunicorn app:app --log-level debug --workers=2 --threads=4 --timeout=60
+      cd /opt/subpase/project/src && python3 -c "from app import db; db.create_all()"
+      cd /opt/subpase/project/src && gunicorn app:app --log-level debug --workers=2 --threads=4 --timeout=60
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
@@ -17,4 +17,4 @@ services:
       - key: FLASK_ENV
         value: production
       - key: PYTHONPATH
-        value: /opt/render/project/src
+        value: /opt/subpase/project/src
