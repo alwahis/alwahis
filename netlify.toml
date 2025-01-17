@@ -5,6 +5,8 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  NETLIFY_USE_YARN = "false"
+  BUILD_TRIGGER = "2025-01-17-1"
 
 [[redirects]]
   from = "/*"

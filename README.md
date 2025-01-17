@@ -1,5 +1,7 @@
 # الوحيس - منصة مشاركة الرحلات في العراق
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/alwahis/alwahis/deploy-status)](https://app.netlify.com/sites/alwahis/deploys)
+
 تطبيق ويب حديث لمشاركة الرحلات في العراق، يربط بين السائقين والركاب بطريقة سهلة وآمنة.
 
 ## التقنيات المستخدمة
